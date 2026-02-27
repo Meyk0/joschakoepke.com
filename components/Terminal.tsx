@@ -157,22 +157,41 @@ export default function Terminal() {
           className="flex-1 overflow-y-auto px-6 py-5 cursor-text"
           onClick={focusInput}
         >
+          {/* ASCII banner */}
+          <pre
+            className="mb-4 text-xs sm:text-sm leading-none hidden sm:block"
+            style={{ color: "var(--green)" }}
+          >{`
+       __              __
+      / /___  _____   / /_  ____ _
+ __  / / __ \\/ ___/  / __ \\/ __ \`/
+/ /_/ / /_/ (__  )  / / / / /_/ /
+\\____/\\____/____/  /_/ /_/\\__,_/
+
+ _  __                  __
+| |/ /___  ___  ____   / /_ ___
+|   / __ \\/ _ \\/ __ \\ / //_/ _ \\
+/   / /_/ /  __/ /_/ // ,< /  __/
+/_/|_\\____/\\___/ .___//_/|_|\\___/
+              /_/
+`}</pre>
+          {/* Mobile: compact banner */}
+          <div
+            className="mb-4 text-lg font-bold sm:hidden"
+            style={{ color: "var(--green)" }}
+          >
+            Joscha Koepke
+          </div>
+
           {/* Boot line */}
           <div
-            className="mb-6 text-xs"
+            className="mb-4 text-xs"
             style={{ color: "var(--text-faint)" }}
           >
             joscha-koepke.local ↑ bash · mcp/v1 ready · {bootDate}
           </div>
 
-          {/* Welcome prompt */}
-          <div className="mb-2">
-            <div className="flex items-center">
-              <span style={{ color: "var(--green)", fontWeight: 600 }}>
-                joscha-koepke@mcp:~$
-              </span>
-            </div>
-          </div>
+          {/* Welcome */}
           <div className="mb-2" style={{ color: "var(--text)" }}>
             Welcome. I&apos;m Joscha Koepke - I love espresso and Golden Retrievers.
           </div>
