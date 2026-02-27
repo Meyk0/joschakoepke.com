@@ -157,24 +157,15 @@ export default function Terminal() {
           className="flex-1 overflow-y-auto px-6 py-5 cursor-text"
           onClick={focusInput}
         >
-          {/* ASCII banner */}
-          <pre
-            className="mb-4 text-xs sm:text-sm leading-none hidden sm:block"
-            style={{ color: "var(--green)" }}
-          >{`
-       __              __
-      / /___  _____   / /_  ____ _
- __  / / __ \\/ ___/  / __ \\/ __ \`/
-/ /_/ / /_/ (__  )  / / / / /_/ /
-\\____/\\____/____/  /_/ /_/\\__,_/
-
- _  __                  __
-| |/ /___  ___  ____   / /_ ___
-|   / __ \\/ _ \\/ __ \\ / //_/ _ \\
-/   / /_/ /  __/ /_/ // ,< /  __/
-/_/|_\\____/\\___/ .___//_/|_|\\___/
-              /_/
-`}</pre>
+          {/* ASCII banner — rainbow like oh-my-zsh */}
+          <div className="mb-4 text-xs sm:text-sm leading-none hidden sm:block font-mono whitespace-pre">
+            <div style={{ color: "#ff5f56" }}>{`       __              __               _  __                  __`}</div>
+            <div style={{ color: "#ff9f43" }}>{`      / /___  _____   / /_  ____ _     | |/ /___  ___  ____   / /_ ___`}</div>
+            <div style={{ color: "#ffda6b" }}>{` __  / / __ \\/ ___/  / __ \\/ __ \`/     |   / __ \\/ _ \\/ __ \\ / //_/ _ \\`}</div>
+            <div style={{ color: "#00ff88" }}>{`/ /_/ / /_/ (__  )  / / / / /_/ /     /   / /_/ /  __/ /_/ // ,< /  __/`}</div>
+            <div style={{ color: "#5fd7ff" }}>{`\\____/\\____/____/  /_/ /_/\\__,_/     /_/|_\\____/\\___/ .___//_/|_|\\___/`}</div>
+            <div style={{ color: "#c084fc" }}>{`                                                   /_/`}</div>
+          </div>
           {/* Mobile: compact banner */}
           <div
             className="mb-4 text-lg font-bold sm:hidden"
