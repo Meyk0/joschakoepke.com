@@ -18,11 +18,10 @@ export default function CommandOutput({
       className="animate-fade-in"
       style={{ animationDelay: `${index * 0.02}s` }}
     >
-      <div className="flex">
-        <span style={{ color: "var(--green)" }}>joscha@mcp</span>
-        <span style={{ color: "var(--text-muted)" }}>:</span>
-        <span style={{ color: "var(--green-dim)" }}>~</span>
-        <span style={{ color: "var(--text)" }}>$ </span>
+      <div className="flex gap-2">
+        <span style={{ color: "var(--green)", fontWeight: 600 }}>
+          joscha-koepke@mcp:~$
+        </span>
         <span>{command}</span>
       </div>
       {result.output && (

@@ -92,142 +92,171 @@ export default function Terminal() {
   };
 
   const bootDate = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
+    month: "numeric",
     day: "numeric",
+    year: "numeric",
   });
 
   return (
     <div
-      className="flex flex-col h-screen max-h-screen animate-page-load"
+      className="flex items-center justify-center min-h-screen p-4 sm:p-8 animate-page-load"
       style={{ background: "var(--bg)" }}
     >
-      {/* Title bar */}
       <div
-        className="flex items-center justify-between px-4 py-2 border-b"
+        className="flex flex-col w-full max-w-5xl rounded-lg border overflow-hidden"
         style={{
           background: "var(--surface)",
           borderColor: "var(--border)",
+          height: "min(85vh, 900px)",
         }}
       >
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1.5">
-            <span
-              className="w-3 h-3 rounded-full"
-              style={{ background: "var(--red)" }}
-            />
-            <span
-              className="w-3 h-3 rounded-full"
-              style={{ background: "var(--amber)" }}
-            />
-            <span
-              className="w-3 h-3 rounded-full"
-              style={{ background: "var(--green)" }}
-            />
-          </div>
-          <span className="ml-3 text-xs" style={{ color: "var(--text-dim)" }}>
-            joscha-koepke — terminal
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5 text-xs">
-          <span
-            className="w-1.5 h-1.5 rounded-full"
-            style={{ background: "var(--green)" }}
-          />
-          <span style={{ color: "var(--green-dim)" }}>MCP live</span>
-        </div>
-      </div>
-
-      {/* Terminal body */}
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 cursor-text"
-        onClick={focusInput}
-        style={{ background: "var(--surface)" }}
-      >
-        {/* Boot message */}
-        <div className="mb-4" style={{ color: "var(--text-muted)" }}>
-          <div>joscha-koepke terminal v1.0.0</div>
-          <div>{bootDate}</div>
-          <div className="mt-2" style={{ color: "var(--text-dim)" }}>
-            Welcome. Type{" "}
-            <span style={{ color: "var(--green)" }}>help</span> to get started.
-          </div>
-        </div>
-
-        {/* Command history */}
-        {history.map((entry, i) => (
-          <CommandOutput
-            key={i}
-            command={entry.command}
-            result={entry.result}
-            index={i}
-          />
-        ))}
-
-        {/* Current input line */}
-        <div className="flex items-center">
-          <span style={{ color: "var(--green)" }}>joscha@mcp</span>
-          <span style={{ color: "var(--text-muted)" }}>:</span>
-          <span style={{ color: "var(--green-dim)" }}>~</span>
-          <span style={{ color: "var(--text)" }}>$ </span>
-          <form onSubmit={handleSubmit} className="flex-1 relative">
-            <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="w-full bg-transparent outline-none caret-transparent"
-              style={{ color: "var(--text)", fontFamily: "inherit", fontSize: "inherit" }}
-              spellCheck={false}
-              autoCapitalize="off"
-              autoComplete="off"
-              autoCorrect="off"
-            />
-            {/* Fake cursor overlay */}
-            <span
-              className="absolute top-0 pointer-events-none"
-              style={{ left: `${input.length}ch` }}
-            >
+        {/* Title bar */}
+        <div
+          className="flex items-center justify-between px-4 py-3 border-b"
+          style={{
+            borderColor: "var(--border-dim)",
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <div className="flex gap-2">
               <span
-                className="inline-block w-[0.6em] h-[1.2em] animate-blink"
+                className="w-3 h-3 rounded-full"
+                style={{ background: "var(--red)" }}
+              />
+              <span
+                className="w-3 h-3 rounded-full"
+                style={{ background: "var(--amber)" }}
+              />
+              <span
+                className="w-3 h-3 rounded-full"
                 style={{ background: "var(--green)" }}
               />
-            </span>
-          </form>
-        </div>
-
-        {/* Autocomplete dropdown */}
-        {autocomplete.length > 0 && (
+            </div>
+          </div>
+          <span className="text-xs" style={{ color: "var(--text-dim)" }}>
+            joscha-koepke — terminal
+          </span>
           <div
-            className="mt-1 p-2 border rounded text-xs"
+            className="flex items-center gap-1.5 text-xs px-2.5 py-0.5 rounded border"
             style={{
-              background: "var(--surface-2)",
-              borderColor: "var(--border)",
+              borderColor: "var(--green-muted)",
+              color: "var(--green)",
             }}
           >
-            {autocomplete.map((cmd) => (
-              <div
-                key={cmd}
-                className="px-2 py-0.5 cursor-pointer hover:opacity-80"
-                style={{ color: "var(--green-dim)" }}
-                onClick={() => {
-                  setInput(cmd);
-                  setAutocomplete([]);
-                  inputRef.current?.focus();
-                }}
-              >
-                {cmd}
-              </div>
-            ))}
+            <span
+              className="w-1.5 h-1.5 rounded-full"
+              style={{ background: "var(--green)" }}
+            />
+            MCP live
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Status bar */}
-      <StatusBar />
+        {/* Terminal body */}
+        <div
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto px-6 py-5 cursor-text"
+          onClick={focusInput}
+        >
+          {/* Boot line */}
+          <div
+            className="mb-6 text-xs"
+            style={{ color: "var(--text-faint)" }}
+          >
+            joscha-koepke.local ↑ bash · mcp/v1 ready · {bootDate}
+          </div>
+
+          {/* Welcome prompt */}
+          <div className="mb-2">
+            <div className="flex items-center">
+              <span style={{ color: "var(--green)", fontWeight: 600 }}>
+                joscha-koepke@mcp:~$
+              </span>
+            </div>
+          </div>
+          <div className="mb-2" style={{ color: "var(--text)" }}>
+            Welcome. I&apos;m Joscha Koepke — Head of Product at Connectly AI.
+          </div>
+          <div className="mb-6" style={{ color: "var(--text-muted)" }}>
+            Type <span style={{ color: "var(--green)" }}>help</span> to see
+            available commands.
+          </div>
+
+          {/* Command history */}
+          {history.map((entry, i) => (
+            <CommandOutput
+              key={i}
+              command={entry.command}
+              result={entry.result}
+              index={i}
+            />
+          ))}
+
+          {/* Current input line */}
+          <div className="flex items-center">
+            <span style={{ color: "var(--green)", fontWeight: 600 }}>
+              joscha-koepke@mcp:~$
+            </span>
+            <form onSubmit={handleSubmit} className="flex-1 relative ml-2">
+              <input
+                ref={inputRef}
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="w-full bg-transparent outline-none caret-transparent"
+                style={{
+                  color: "var(--text)",
+                  fontFamily: "inherit",
+                  fontSize: "inherit",
+                }}
+                spellCheck={false}
+                autoCapitalize="off"
+                autoComplete="off"
+                autoCorrect="off"
+              />
+              {/* Fake cursor overlay */}
+              <span
+                className="absolute top-0 pointer-events-none"
+                style={{ left: `${input.length}ch` }}
+              >
+                <span
+                  className="inline-block w-[0.6em] h-[1.2em] animate-blink"
+                  style={{ background: "var(--green)" }}
+                />
+              </span>
+            </form>
+          </div>
+
+          {/* Autocomplete dropdown */}
+          {autocomplete.length > 0 && (
+            <div
+              className="mt-1 p-2 border rounded text-xs"
+              style={{
+                background: "var(--surface-2)",
+                borderColor: "var(--border)",
+              }}
+            >
+              {autocomplete.map((cmd) => (
+                <div
+                  key={cmd}
+                  className="px-2 py-0.5 cursor-pointer hover:opacity-80"
+                  style={{ color: "var(--green-dim)" }}
+                  onClick={() => {
+                    setInput(cmd);
+                    setAutocomplete([]);
+                    inputRef.current?.focus();
+                  }}
+                >
+                  {cmd}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Status bar */}
+        <StatusBar />
+      </div>
     </div>
   );
 }
