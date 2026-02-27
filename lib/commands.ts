@@ -33,11 +33,14 @@ const commands: Record<string, CommandHandler> = {
       "  experience    Career history (git log style)",
       "  writing       Articles and posts",
       "  contact       How to reach me",
+      "  neofetch      System info",
       "  mcp           About the MCP server",
       "  mcp tools     List all MCP tool signatures",
       "  mcp connect   How to connect from Claude",
-      "  clear         Clear terminal",
+      "  clear         Clear terminal\n",
+      `  <span style="color: var(--text-muted)">Also: theme, sound, history, dog, coffee, ls, pwd, date</span>`,
     ].join("\n"),
+    isHtml: true,
   }),
 
   bio: () => ({
@@ -198,23 +201,34 @@ const commands: Record<string, CommandHandler> = {
     isHtml: true,
   }),
 
-  neofetch: () => ({
-    output: [
-      `  <span style="color: var(--green); font-weight: 600">joscha-koepke@mcp</span>`,
-      `  <span style="color: var(--green)">──────────────────</span>`,
-      `  <span style="color: var(--green)">OS:</span>      Product Brain v3.0`,
-      `  <span style="color: var(--green)">Host:</span>    San Francisco, CA`,
-      `  <span style="color: var(--green)">Kernel:</span>  Connectly AI`,
-      `  <span style="color: var(--green)">Uptime:</span>  ${new Date().getFullYear() - 2014} years in product`,
-      `  <span style="color: var(--green)">Shell:</span>   TypeScript / Python`,
-      `  <span style="color: var(--green)">DE:</span>      Espresso-Driven Development`,
-      `  <span style="color: var(--green)">Theme:</span>   Dark [always]`,
-      `  <span style="color: var(--green)">CPU:</span>     Caffeine-powered`,
-      `  <span style="color: var(--green)">GPU:</span>     Golden Retriever cuddles`,
-      `  <span style="color: var(--green)">Memory:</span>  Full of product opinions`,
-    ].join("\n"),
-    isHtml: true,
-  }),
+  neofetch: () => {
+    const art = [
+      `    <span style="color: var(--green)">    ╔═══════════╗</span>`,
+      `    <span style="color: var(--green)">    ║  ┌─────┐  ║</span>`,
+      `    <span style="color: var(--green)">    ║  │ >_  │  ║</span>`,
+      `    <span style="color: var(--green)">    ║  │     │  ║</span>`,
+      `    <span style="color: var(--green)">    ║  └─────┘  ║</span>`,
+      `    <span style="color: var(--green)">    ╚═══════════╝</span>`,
+      `    <span style="color: var(--green)">     ╱──────────╲</span>`,
+      `    <span style="color: var(--green)">    ╱────────────╲</span>`,
+      `    <span style="color: var(--green)">   ════════════════</span>`,
+    ];
+    const info = [
+      `<span style="color: var(--green); font-weight: 600">joscha-koepke@mcp</span>`,
+      `<span style="color: var(--green)">──────────────────</span>`,
+      `<span style="color: var(--green)">OS:</span>      Product Brain v3.0`,
+      `<span style="color: var(--green)">Host:</span>    San Francisco, CA`,
+      `<span style="color: var(--green)">Kernel:</span>  Connectly AI`,
+      `<span style="color: var(--green)">Uptime:</span>  ${new Date().getFullYear() - 2014} years in product`,
+      `<span style="color: var(--green)">Shell:</span>   TypeScript / Python`,
+      `<span style="color: var(--green)">DE:</span>      Espresso-Driven Dev`,
+      `<span style="color: var(--green)">Theme:</span>   Dark [always]`,
+    ];
+    const lines = art.map((a, i) =>
+      i < info.length ? `${a}   ${info[i]}` : a
+    );
+    return { output: lines.join("\n"), isHtml: true };
+  },
 
   coffee: () => ({
     output: [
@@ -267,6 +281,36 @@ const commands: Record<string, CommandHandler> = {
     isHtml: true,
   }),
 
+  dog: () => ({
+    output: [
+      `  <span style="color: var(--amber)">`,
+      "         / \\__",
+      "        (    @\\___",
+      "        /         O",
+      "       /   (_____/",
+      "      /_____/   U",
+      `  </span>`,
+      "",
+      `  <span style="color: var(--amber)">Good boy! 🐕 Golden Retrievers are the best.</span>`,
+    ].join("\n"),
+    isHtml: true,
+  }),
+
+  man: () => ({
+    output: `  <span style="color: var(--text-muted)">No manual entry. This is a website, not a real shell. Try 'help'.</span>`,
+    isHtml: true,
+  }),
+
+  vim: () => ({
+    output: `  <span style="color: var(--text-muted)">You'd never escape. Try 'help' instead.</span>`,
+    isHtml: true,
+  }),
+
+  nano: () => ({
+    output: `  <span style="color: var(--text-muted)">This terminal is read-only. Try 'help' to explore.</span>`,
+    isHtml: true,
+  }),
+
   clear: () => ({ output: "__CLEAR__" }),
 };
 
@@ -291,6 +335,29 @@ export function runCommand(input: string): CommandResult {
   // Handle "sudo" with anything after it
   if (trimmed.startsWith("sudo")) {
     return commands["sudo"]("");
+  }
+
+  // Handle "git" aliases
+  if (trimmed === "git log" || trimmed === "git log --oneline") {
+    return commands["experience"]("");
+  }
+  if (trimmed === "git status") {
+    return {
+      output: [
+        `  On branch <span style="color: var(--green)">main</span>`,
+        `  Your branch is up to date with 'origin/main'.`,
+        "",
+        `  nothing to commit, working tree clean`,
+        `\n  <span style="color: var(--text-muted)">(try 'experience' for career history)</span>`,
+      ].join("\n"),
+      isHtml: true,
+    };
+  }
+  if (trimmed.startsWith("git ")) {
+    return {
+      output: `  <span style="color: var(--text-muted)">git: try 'git log' or 'git status'</span>`,
+      isHtml: true,
+    };
   }
 
   // Handle "echo" with arguments

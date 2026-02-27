@@ -21,6 +21,22 @@ export const metadata: Metadata = {
   },
 };
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: "Joscha Koepke",
+  jobTitle: "Head of Product",
+  worksFor: {
+    "@type": "Organization",
+    name: "Connectly AI",
+  },
+  url: "https://joschakoepke.com",
+  sameAs: [
+    "https://linkedin.com/in/joschakoepke",
+    "https://github.com/Meyk0",
+  ],
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -30,8 +46,21 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link
+          rel="preconnect"
+          href="https://fonts.googleapis.com"
+        />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
           href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&display=swap"
           rel="stylesheet"
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
       <body>

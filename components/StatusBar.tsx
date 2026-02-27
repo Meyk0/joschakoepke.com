@@ -1,6 +1,10 @@
 "use client";
 
-export default function StatusBar() {
+interface StatusBarProps {
+  theme?: string;
+}
+
+export default function StatusBar({ theme = "dark" }: StatusBarProps) {
   return (
     <div
       className="flex items-center justify-between px-3 sm:px-4 py-1.5 text-xs"
@@ -22,6 +26,9 @@ export default function StatusBar() {
         </span>
         <span style={{ fontWeight: 400 }}>↑↓: history</span>
         <span>mcp/v1</span>
+        {theme !== "dark" && (
+          <span style={{ fontWeight: 400 }}>[{theme}]</span>
+        )}
       </div>
     </div>
   );
