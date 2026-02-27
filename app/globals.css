@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #060a06;
+  --surface: #080d08;
+  --surface-2: #0a120a;
+  --border: #1a2a1a;
+  --border-dim: #0d1a0d;
+  --green: #00ff88;
+  --green-dim: #4a8a4a;
+  --green-muted: #2a4a2a;
+  --text: #c8d8c8;
+  --text-dim: #8a9e8a;
+  --text-muted: #5a6a5a;
+  --text-faint: #3a4a3a;
+  --amber: #ffb347;
+  --red: #ff6b6b;
+  --status-bar: #00ff88;
+  --status-text: #003a1a;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: var(--green);
+  color: var(--bg);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+/* Animations */
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pageLoad {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-blink {
+  animation: blink 1.2s step-start infinite;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.15s ease-out both;
+}
+
+.animate-page-load {
+  animation: pageLoad 0.6s ease-out both;
+}
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+  html,
+  body {
+    font-size: 14px;
+  }
+}
