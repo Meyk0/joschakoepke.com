@@ -174,7 +174,7 @@ export default function Terminal() {
             </div>
           </div>
           <div className="mb-2" style={{ color: "var(--text)" }}>
-            Welcome. I&apos;m Joscha Koepke — Head of Product at Connectly AI.
+            Welcome. I&apos;m Joscha Koepke - I love espresso and Golden Retrievers.
           </div>
           <div className="mb-6" style={{ color: "var(--text-muted)" }}>
             Type <span style={{ color: "var(--green)" }}>help</span> to see
