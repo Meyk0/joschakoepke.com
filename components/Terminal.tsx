@@ -159,11 +159,11 @@ export default function Terminal() {
         >
           {/* ASCII banner — rainbow like oh-my-zsh */}
           <div className="mb-4 text-xs sm:text-sm leading-none hidden sm:block font-mono whitespace-pre">
-            <div style={{ color: "#ff5f56" }}>{`       __              __               _  __                  __`}</div>
-            <div style={{ color: "#ff9f43" }}>{`      / /___  _____   / /_  ____ _     | |/ /___  ___  ____   / /_ ___`}</div>
-            <div style={{ color: "#ffda6b" }}>{` __  / / __ \\/ ___/  / __ \\/ __ \`/     |   / __ \\/ _ \\/ __ \\ / //_/ _ \\`}</div>
-            <div style={{ color: "#00ff88" }}>{`/ /_/ / /_/ (__  )  / / / / /_/ /     /   / /_/ /  __/ /_/ // ,< /  __/`}</div>
-            <div style={{ color: "#5fd7ff" }}>{`\\____/\\____/____/  /_/ /_/\\__,_/     /_/|_\\____/\\___/ .___//_/|_|\\___/`}</div>
+            <div style={{ color: "#ff5f56" }}>{`       __                __             __ __                 __`}</div>
+            <div style={{ color: "#ff9f43" }}>{`      / /___  __________/ /_  ____ _   / //_/___  ___  ____  / /__ ___`}</div>
+            <div style={{ color: "#ffda6b" }}>{` __  / / __ \\/ ___/ ___/ __ \\/ __ \`/  / ,< / __ \\/ _ \\/ __ \\/ //_/ _ \\`}</div>
+            <div style={{ color: "#00ff88" }}>{`/ /_/ / /_/ (__  ) /__/ / / / /_/ /  / /| / /_/ /  __/ /_/ / ,< /  __/`}</div>
+            <div style={{ color: "#5fd7ff" }}>{`\\____/\\____/____/\\___/_/ /_/\\__,_/  /_/ |_\\____/\\___/ .___/_/|_|\\___/`}</div>
             <div style={{ color: "#c084fc" }}>{`                                                   /_/`}</div>
           </div>
           {/* Mobile: compact banner */}
