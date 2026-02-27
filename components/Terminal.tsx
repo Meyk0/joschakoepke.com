@@ -416,7 +416,7 @@ export default function Terminal() {
             className="mb-4 text-xs"
             style={{ color: "var(--text-faint)" }}
           >
-            joscha-koepke.local ↑ bash · mcp/v1 ready · {bootDate}
+            joscha-koepke.local ↑ bash · {bootDate}
           </div>
 
           {/* Welcome — typing animation */}

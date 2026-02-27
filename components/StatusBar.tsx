@@ -25,7 +25,6 @@ export default function StatusBar({ theme = "dark" }: StatusBarProps) {
           Tab: autocomplete
         </span>
         <span style={{ fontWeight: 400 }}>↑↓: history</span>
-        <span>mcp/v1</span>
         {theme !== "dark" && (
           <span style={{ fontWeight: 400 }}>[{theme}]</span>
         )}
