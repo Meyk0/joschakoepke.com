@@ -164,6 +164,7 @@ export const projects: Project[] = [
     description:
       "Hands-on training platform for writing AI evals. LLM-as-judge, trace analysis, rubric design.",
     tech: ["React", "TypeScript"],
+    url: "https://www.evalarena.xyz",
   },
   {
     name: "joschakoepke.com",
@@ -189,6 +190,7 @@ export const projects: Project[] = [
     description:
       "AI-powered resume analysis and feedback tool.",
     tech: ["React", "TypeScript", "LLMs"],
+    url: "https://www.theresume.guru/",
   },
   {
     name: "Git Claude Commit",

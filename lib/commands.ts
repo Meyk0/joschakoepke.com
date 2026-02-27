@@ -49,7 +49,6 @@ const commands: Record<string, CommandHandler> = {
       `  ${bio.role} @ ${bio.company}`,
       `  📍 ${bio.location}\n`,
       `  ${bio.summary}\n`,
-      `  ${bio.tags.map((t) => `<span style="color: var(--green-dim)">#${t}</span>`).join("  ")}`,
     ].join("\n"),
     isHtml: true,
   }),
