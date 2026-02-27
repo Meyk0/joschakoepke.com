@@ -59,6 +59,25 @@ export interface McpToolMeta {
   parameters: string;
 }
 
+export interface ResumeData {
+  summary: string;
+  selectedImpact: string[];
+  experience: ResumeExperience[];
+  competencies: Record<string, string>;
+  education: string[];
+  languages: string[];
+  sideProjects: string[];
+  interests: string;
+}
+
+export interface ResumeExperience {
+  company: string;
+  role: string;
+  dates: string;
+  context?: string;
+  bullets: string[];
+}
+
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
 export const bio: Bio = {
@@ -67,8 +86,8 @@ export const bio: Bio = {
   company: "Connectly AI",
   location: "San Francisco, CA",
   summary:
-    "Building AI agents for WhatsApp commerce at Connectly. Previously product at several startups. Passionate about the intersection of AI, product, and user experience.",
-  tags: ["product", "ai", "agents", "whatsapp", "commerce", "mcp"],
+    "AI product leader. Led Connectly\u2019s agent platform from inception to $10M+ ARR, powering 40M+ monthly messages for enterprise retailers globally. Previously Global Product Lead at Google for online-to-offline ads, scaling from beta to 9-digit ARR across 20+ countries.",
+  tags: ["product", "ai", "agents", "llm-eval", "personalization", "mcp"],
 };
 
 export const manifesto: ManifestoEntry[] = [
@@ -135,8 +154,16 @@ export const projects: Project[] = [
     type: "work",
     status: "active",
     description:
-      "AI-powered sales agents for WhatsApp commerce. Automated conversations that drive revenue for D2C brands across LATAM and emerging markets.",
+      "AI-powered sales agents for WhatsApp commerce. Agent memory, personalization, retrieval, LLM evaluation. $10M+ ARR, 40M+ monthly messages.",
     tech: ["LLMs", "WhatsApp API", "TypeScript", "Python"],
+  },
+  {
+    name: "EvalArena",
+    type: "side",
+    status: "active",
+    description:
+      "Hands-on training platform for writing AI evals. LLM-as-judge, trace analysis, rubric design.",
+    tech: ["React", "TypeScript"],
   },
   {
     name: "joschakoepke.com",
@@ -148,43 +175,51 @@ export const projects: Project[] = [
     url: "https://joschakoepke.com",
   },
   {
-    name: "MCP Personal Server",
+    name: "MCP Task Creator",
     type: "side",
-    status: "active",
+    status: "shipped",
     description:
-      "An MCP server that lets Claude (and other AI agents) query my background, projects, and manifesto programmatically.",
-    tech: ["MCP", "SSE", "Next.js API Routes"],
-    url: "https://mcp.joschakoepke.com/api/mcp",
+      "MCP-based task creation tool for AI agent workflows.",
+    tech: ["MCP", "TypeScript"],
+  },
+  {
+    name: "AI Resume Analyzer",
+    type: "side",
+    status: "shipped",
+    description:
+      "AI-powered resume analysis and feedback tool.",
+    tech: ["React", "TypeScript", "LLMs"],
+  },
+  {
+    name: "Git Claude Commit",
+    type: "side",
+    status: "shipped",
+    description:
+      "AI-assisted git commit message generator.",
+    tech: ["TypeScript", "Git"],
   },
 ];
 
 export const experience: ExperienceEntry[] = [
   {
     hash: "a1b2c3d",
-    date: "2023–present",
+    date: "2021\u2013present",
     message: "Head of Product @ Connectly AI",
-    body: "Leading product for AI-powered WhatsApp commerce platform. Building conversational agents that drive revenue for D2C brands.",
+    body: "Series B (Alibaba, Unusual Ventures). Scaled agent platform from inception to $10M+ ARR, 40M+ monthly messages. Led Product & Design team of 5.",
     branch: "main",
   },
   {
     hash: "e4f5g6h",
-    date: "2021–2023",
-    message: "Senior Product Manager @ Previous Co",
-    body: "Shipped core product features, grew user engagement. Led cross-functional team of 8.",
+    date: "2018\u20132021",
+    message: "Global Product Lead, Online to Offline @ Google",
+    body: "Led product & GTM for online-to-offline ads across Search, Display, YouTube, Maps. Scaled from beta to 9-digit ARR across 20+ countries.",
     branch: "main",
   },
   {
     hash: "i7j8k9l",
-    date: "2019–2021",
-    message: "Product Manager @ Early Stage Startup",
-    body: "First PM hire. Built product from 0→1, established product processes and culture.",
-    branch: "main",
-  },
-  {
-    hash: "m0n1o2p",
-    date: "2017–2019",
-    message: "Associate PM / Business Analyst",
-    body: "Started in product. Learned the craft through shipping, failing, and iterating.",
+    date: "2014\u20132018",
+    message: "Senior Account Manager @ Google",
+    body: "Managed $50M+ portfolio of automotive & mobility advertisers, averaging 50% YoY growth.",
     branch: "origin/career",
   },
 ];
@@ -265,6 +300,82 @@ export const openToWork: OpenToWork = {
     "Head of Product / VP Product at an AI-native company building tools that matter.",
 };
 
+// ─── Hidden CV (MCP-only, not exposed in terminal UI) ─────────────────────────
+
+export const resume: ResumeData = {
+  summary:
+    "AI product leader with deep hands-on experience across the full stack of enterprise conversational agents: memory and personalization, retrieval and knowledge grounding, and LLM evaluation systems. Led and grew Connectly\u2019s agent platform from inception to $10M+ ARR, powering 40M+ monthly messages for enterprise retailers globally. Customer obsession built through years of working directly with customers, partnering with forward-deployed engineering teams to turn deployment learnings into product direction.",
+  selectedImpact: [
+    "Scaled platform to $10M+ ARR with 106% net dollar retention in 2025. Existing customers expanded faster than any churn.",
+    "2x direct in-thread purchases per session since Oct 2025, driven by evaluation-informed improvements to checkout, discount logic, and personalization.",
+    "40M+ monthly messages across outbound marketing campaigns and inbound AI agent interactions at 99% uptime.",
+  ],
+  experience: [
+    {
+      company: "Connectly AI",
+      role: "Head of Product",
+      dates: "04/2021 \u2013 Present",
+      context: "Series B \u00B7 Investors: Alibaba, Unusual Ventures",
+      bullets: [
+        "Designed and shipped agent memory and personalization: per-session context summaries stored in Postgres, injected into key LLM calls (router, response generator, agent loops) for cross-session continuity. Architected around enterprise privacy requirements (consent, data minimization, retention, auditability), reducing time-to-checkout for returning customers on sales agents by ~3 min.",
+        "Built and owned the AI evaluation platform: simulations, LLM-as-judge scoring, and telemetry to diagnose funnel drop-offs. Translated insights into checkout, discount, and personalization improvements, doubling direct in-thread purchases per session since Oct 2025.",
+        "Led the AI Agent Builder Platform: reusable modules, standardized SDKs, and integration templates that cut agent setup and integration time from weeks to hours for forward-deployed and customer engineering teams.",
+        "Defined composable SOP framework through direct work with enterprise retail customers: knowledge grounding, product search and recommendations, order status, and checkout. Translated deployment learnings into reusable modules now used in production globally.",
+        "Designed real-time intent classification layer: routing between transactional and exploratory shopper intent upstream of the recommendation engine, then selecting between consultative dialog and direct recommendations based on context.",
+        "Owned event-trigger-action orchestration architecture handling 40M+ monthly messages across outbound marketing campaigns and inbound AI agent interactions, maintaining 99% uptime across production deployments.",
+        "Defined enterprise pricing and integrations: usage-based and managed tiers, plus strategic integrations with Salesforce, Braze, Shopify, and VTEX, contributing to 25% ACV growth and 40% YoY revenue increase.",
+        "Hired and led global Product and Design team of 5. Established cross-functional alignment across Engineering, Sales, and Customer Engineering.",
+      ],
+    },
+    {
+      company: "Google",
+      role: "Global Product Lead, Online to Offline",
+      dates: "09/2018 \u2013 04/2021",
+      bullets: [
+        "Led product and go-to-market strategy for online-to-offline ads and geo products across Search, Display, YouTube, and Google Maps. Scaled from beta to 9-digit ARR across 20+ countries.",
+        "Core product was Store Visits attribution: probabilistic modeling of ad exposure to physical store visit conversion, working closely with advertisers to validate and scale results.",
+      ],
+    },
+    {
+      company: "Google",
+      role: "Senior Account Manager",
+      dates: "04/2014 \u2013 09/2018",
+      bullets: [
+        "Managed $50M+ portfolio of automotive and mobility advertisers, achieving average 50% YoY growth through performance optimization and expansion.",
+      ],
+    },
+  ],
+  competencies: {
+    "AI agent systems":
+      "orchestration, tool & API integrations, retrieval & knowledge grounding, personalization, LLM-as-judge evaluation, simulations, telemetry",
+    "Platform product":
+      "APIs, SDKs, integration templates, developer experience, observability & debugging workflows, enterprise controls, pricing & packaging",
+    "Data & experimentation":
+      "customer development, A/B experimentation, SQL, Python",
+    "Security & compliance":
+      "ISO 27001 certification leadership, enterprise privacy (consent, data minimization, retention, auditability), access governance",
+  },
+  education: [
+    "M.Sc. Management & Marketing, HEC Lausanne",
+    "Global MBA Exchange, National Taiwan University",
+    "B.Sc. Business Administration, University of M\u00FCnster",
+    "Full Stack Development, Le Wagon (2018)",
+  ],
+  languages: [
+    "German & English (native)",
+    "French (fluent)",
+    "Spanish (conversational)",
+  ],
+  sideProjects: [
+    "EvalArena: hands-on training platform for writing AI evals (LLM-as-judge, trace analysis, rubric design)",
+    "MCP Task Creator",
+    "AI Resume Analyzer",
+    "Git Claude Commit",
+  ],
+  interests:
+    "Dogs, mostly Golden Retrievers and preferably puppies. Overpriced espresso machines. Paragliding over and surfing in San Francisco\u2019s cold and sharky waters.",
+};
+
 export const mcpTools: McpToolMeta[] = [
   {
     name: "get_bio",
@@ -299,6 +410,11 @@ export const mcpTools: McpToolMeta[] = [
   {
     name: "is_open_to_work",
     description: "Returns availability, context, and ideal role",
+    parameters: "(none)",
+  },
+  {
+    name: "get_resume",
+    description: "Returns full CV with detailed experience, impact metrics, competencies, and education",
     parameters: "(none)",
   },
 ];

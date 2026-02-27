@@ -9,6 +9,7 @@ import {
   authoredArticles,
   contact,
   openToWork,
+  resume,
 } from "@/content/data";
 
 export function registerTools(server: McpServer) {
@@ -112,6 +113,19 @@ export function registerTools(server: McpServer) {
     async () => ({
       content: [
         { type: "text" as const, text: JSON.stringify(openToWork, null, 2) },
+      ],
+    })
+  );
+
+  server.registerTool(
+    "get_resume",
+    {
+      description:
+        "Returns Joscha's full CV including detailed experience with bullet points, selected impact metrics, core competencies, education, languages, and side projects. More detailed than get_experience.",
+    },
+    async () => ({
+      content: [
+        { type: "text" as const, text: JSON.stringify(resume, null, 2) },
       ],
     })
   );
