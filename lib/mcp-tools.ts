@@ -5,7 +5,8 @@ import {
   manifesto,
   projects,
   experience,
-  articles,
+  featuredArticles,
+  authoredArticles,
   contact,
   openToWork,
 } from "@/content/data";
@@ -77,11 +78,14 @@ export function registerTools(server: McpServer) {
   server.registerTool(
     "get_writing",
     {
-      description: "Returns articles authored by Joscha with links and dates",
+      description: "Returns articles featuring and authored by Joscha, with links and dates",
     },
     async () => ({
       content: [
-        { type: "text" as const, text: JSON.stringify(articles, null, 2) },
+        {
+          type: "text" as const,
+          text: JSON.stringify({ featured: featuredArticles, authored: authoredArticles }, null, 2),
+        },
       ],
     })
   );

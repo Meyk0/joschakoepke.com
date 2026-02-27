@@ -3,7 +3,8 @@ import {
   manifesto,
   projects,
   experience,
-  articles,
+  featuredArticles,
+  authoredArticles,
   contact,
   openToWork,
   mcpTools,
@@ -108,14 +109,24 @@ const commands: Record<string, CommandHandler> = {
   },
 
   writing: () => {
-    if (articles.length === 0) {
-      return { output: "  No articles published yet. Stay tuned." };
-    }
-    const lines = articles.map(
+    const featured = featuredArticles.map(
       (a) =>
         `  <span style="color: var(--green-dim)">→</span> ${a.title}\n    <span style="color: var(--text-muted)">${a.publication} · ${a.year}</span>`
     );
-    return { output: lines.join("\n\n"), isHtml: true };
+    const authored = authoredArticles.map(
+      (a) =>
+        `  <span style="color: var(--green-dim)">→</span> ${a.title}\n    <span style="color: var(--text-muted)">${a.publication} · ${a.year}</span>`
+    );
+    return {
+      output: [
+        `  <span style="color: var(--green); font-weight: 600">Featured In</span>\n`,
+        ...featured,
+        "",
+        `  <span style="color: var(--green); font-weight: 600">Authored</span>\n`,
+        ...authored,
+      ].join("\n"),
+      isHtml: true,
+    };
   },
 
   contact: () => ({

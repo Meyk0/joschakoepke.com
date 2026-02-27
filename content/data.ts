@@ -189,18 +189,63 @@ export const experience: ExperienceEntry[] = [
   },
 ];
 
-export const articles: Article[] = [
+export const featuredArticles: Article[] = [
   {
-    title: "Why Every PM Should Learn to Code (a little)",
-    url: "#",
-    publication: "Personal Blog",
+    title: "AITech Interview with Joscha Koepke, Head of Product at Connectly.ai",
+    url: "https://ai-techpark.com/aitech-interview-with-joscha-koepke/",
+    publication: "AI TechPark",
     year: 2024,
   },
   {
-    title: "Building AI Agents That Actually Work",
-    url: "#",
-    publication: "Personal Blog",
+    title: "Here\u2019s Why Everyone is Raving About RAG",
+    url: "https://ai-techpark.com/why-everyone-is-raving-about-rag/",
+    publication: "AI TechPark",
     year: 2024,
+  },
+  {
+    title: "How AI Is Disrupting Our Industry, And What We Can Do About It",
+    url: "https://medium.com/authority-magazine/joscha-koepke-of-connectly-how-ai-is-disrupting-our-industry-and-what-we-can-do-about-it-03514fbb5443",
+    publication: "Authority Magazine",
+    year: 2024,
+  },
+  {
+    title: "AI Walks Into a Bar: The Quest for Artificial Humor",
+    url: "https://www.pymnts.com/artificial-intelligence-2/2024/ai-walks-into-a-bar-the-quest-for-artificial-humor/",
+    publication: "PYMNTS",
+    year: 2024,
+  },
+  {
+    title: "Joscha Koepke, Head of Product at Connectly \u2013 Interview Series",
+    url: "https://www.unite.ai/joscha-koepke-head-of-product-at-connectly-interview-series/",
+    publication: "Unite.AI",
+    year: 2024,
+  },
+];
+
+export const authoredArticles: Article[] = [
+  {
+    title: "Launching vs. Landing: Why Product Landings Matter More Than Launches",
+    url: "https://www.linkedin.com/pulse/launching-vs-landing-why-product-landings-matter-more-joscha-koepke-dolhe/",
+    publication: "LinkedIn",
+    year: 2024,
+  },
+  {
+    title: "What\u2019s the rage about RAG?",
+    url: "https://www.linkedin.com/pulse/whats-rage-rag-joscha-koepke-karvc/",
+    publication: "LinkedIn",
+    year: 2024,
+  },
+  {
+    title: "The Dawn of Agentic Chatbots",
+    url: "https://www.linkedin.com/pulse/dawn-agentic-chatbots-joscha-koepke-t4sbc/",
+    publication: "LinkedIn",
+    year: 2023,
+  },
+  {
+    title: "Decision-Making at Connectly: The Power of First Principles Thinking",
+    url: "https://www.linkedin.com/pulse/decision-making-connectly-power-first-principles-thinking-koepke/",
+    publication: "LinkedIn",
+    year: 2023,
   },
 ];
 
