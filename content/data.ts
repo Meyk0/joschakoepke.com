@@ -419,4 +419,9 @@ export const mcpTools: McpToolMeta[] = [
     description: "Returns full CV with detailed experience, impact metrics, competencies, and education",
     parameters: "(none)",
   },
+  {
+    name: "ask_joscha",
+    description: "Ask any free-form question about Joscha and get a grounded, conversational answer",
+    parameters: "question: string",
+  },
 ];

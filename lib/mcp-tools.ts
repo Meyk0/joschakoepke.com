@@ -12,6 +12,69 @@ import {
   resume,
 } from "@/content/data";
 
+function buildJoschaContext(): string {
+  return [
+    "# Joscha Koepke — Full Profile\n",
+    "## Bio",
+    JSON.stringify(bio, null, 2),
+    "\n## Product Manifesto",
+    JSON.stringify(manifesto, null, 2),
+    "\n## Projects",
+    JSON.stringify(projects, null, 2),
+    "\n## Experience (Summary)",
+    JSON.stringify(experience, null, 2),
+    "\n## Full Resume / CV",
+    JSON.stringify(resume, null, 2),
+    "\n## Articles — Featured In",
+    JSON.stringify(featuredArticles, null, 2),
+    "\n## Articles — Authored",
+    JSON.stringify(authoredArticles, null, 2),
+    "\n## Contact",
+    JSON.stringify(contact, null, 2),
+    "\n## Open to Work",
+    JSON.stringify(openToWork, null, 2),
+  ].join("\n");
+}
+
+async function askClaude(question: string): Promise<string> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return "The ask_joscha tool is not configured yet (missing API key). Please use the other MCP tools to query Joscha's data directly.";
+  }
+
+  const systemPrompt = `You are an AI assistant that answers questions about Joscha Koepke based ONLY on the provided data. Rules:
+- Answer only using the data below. Do not make things up.
+- If the data doesn't cover the question, say "I don't have that information about Joscha."
+- Refer to Joscha in third person (he/him), not first person.
+- Be concise, conversational, and helpful.
+- When relevant, mention specific data points (metrics, dates, company names).
+
+${buildJoschaContext()}`;
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 500,
+      system: systemPrompt,
+      messages: [{ role: "user", content: question }],
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Claude API error: ${res.status} ${err}`);
+  }
+
+  const data = await res.json();
+  return data.content?.[0]?.text ?? "No response generated.";
+}
+
 export function registerTools(server: McpServer) {
   server.registerTool(
     "get_bio",
@@ -128,5 +191,24 @@ export function registerTools(server: McpServer) {
         { type: "text" as const, text: JSON.stringify(resume, null, 2) },
       ],
     })
+  );
+
+  server.registerTool(
+    "ask_joscha",
+    {
+      description:
+        "Ask any free-form question about Joscha Koepke and get a conversational answer grounded in his real data (bio, resume, manifesto, projects, experience, articles). Great for questions like 'Would Joscha be a good fit for our AI PM role?' or 'What does Joscha think about frameworks?'",
+      inputSchema: {
+        question: z
+          .string()
+          .describe("The question to ask about Joscha Koepke"),
+      },
+    },
+    async ({ question }) => {
+      const answer = await askClaude(question);
+      return {
+        content: [{ type: "text" as const, text: answer }],
+      };
+    }
   );
 }
