@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://joschakoepke.com"),
   title: "Joscha Koepke",
   description:
     "Head of Product at Connectly AI. Building AI agents for WhatsApp commerce. Queryable via MCP.",
@@ -16,9 +18,6 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Joscha Koepke — Terminal",
     description: "A personal site you can query from Claude.",
-  },
-  icons: {
-    icon: "/favicon.ico",
   },
 };
 
@@ -35,7 +34,10 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }

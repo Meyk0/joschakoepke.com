@@ -17,12 +17,17 @@ export interface CommandResult {
 
 type CommandHandler = (args: string) => CommandResult;
 
+function link(url: string, text: string): string {
+  return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: var(--green-dim); text-decoration: underline; text-decoration-color: var(--green-muted); text-underline-offset: 2px">${text}</a>`;
+}
+
 const commands: Record<string, CommandHandler> = {
   help: () => ({
     output: [
       "  Available commands:\n",
       "  help          Show this help message",
       "  bio           Who I am",
+      "  whoami        Alias for bio",
       "  manifesto     My product principles (try: manifesto 3)",
       "  projects      What I'm building",
       "  experience    Career history (git log style)",
@@ -45,6 +50,8 @@ const commands: Record<string, CommandHandler> = {
     ].join("\n"),
     isHtml: true,
   }),
+
+  whoami: () => commands.bio(""),
 
   manifesto: (args: string) => {
     const trimmed = args.trim();
@@ -87,7 +94,7 @@ const commands: Record<string, CommandHandler> = {
         `    ${p.description}`,
         `    <span style="color: var(--text-muted)">tech: ${p.tech.join(", ")}</span>`,
         p.url
-          ? `    <span style="color: var(--text-muted)">url: ${p.url}</span>`
+          ? `    ${link(p.url, p.url)}`
           : null,
       ]
         .filter(Boolean)
@@ -111,11 +118,11 @@ const commands: Record<string, CommandHandler> = {
   writing: () => {
     const featured = featuredArticles.map(
       (a) =>
-        `  <span style="color: var(--green-dim)">→</span> ${a.title}\n    <span style="color: var(--text-muted)">${a.publication} · ${a.year}</span>`
+        `  <span style="color: var(--green-dim)">→</span> ${link(a.url, a.title)}\n    <span style="color: var(--text-muted)">${a.publication} · ${a.year}</span>`
     );
     const authored = authoredArticles.map(
       (a) =>
-        `  <span style="color: var(--green-dim)">→</span> ${a.title}\n    <span style="color: var(--text-muted)">${a.publication} · ${a.year}</span>`
+        `  <span style="color: var(--green-dim)">→</span> ${link(a.url, a.title)}\n    <span style="color: var(--text-muted)">${a.publication} · ${a.year}</span>`
     );
     return {
       output: [
@@ -131,9 +138,9 @@ const commands: Record<string, CommandHandler> = {
 
   contact: () => ({
     output: [
-      `  <span style="color: var(--green)">email</span>     ${contact.email}`,
-      `  <span style="color: var(--green)">linkedin</span>  ${contact.linkedin}`,
-      `  <span style="color: var(--green)">github</span>    ${contact.github}`,
+      `  <span style="color: var(--green)">email</span>     ${link("mailto:" + contact.email, contact.email)}`,
+      `  <span style="color: var(--green)">linkedin</span>  ${link(contact.linkedin, contact.linkedin)}`,
+      `  <span style="color: var(--green)">github</span>    ${link(contact.github, contact.github)}`,
       `  <span style="color: var(--green)">mcp</span>       ${contact.mcp_url}`,
     ].join("\n"),
     isHtml: true,
@@ -174,6 +181,92 @@ const commands: Record<string, CommandHandler> = {
     isHtml: true,
   }),
 
+  // ─── Easter eggs ──────────────────────────────────────────────────────────
+
+  sudo: () => ({
+    output: `  <span style="color: var(--red)">Permission denied.</span> Nice try though. 😏`,
+    isHtml: true,
+  }),
+
+  "rm -rf": () => ({
+    output: `  <span style="color: var(--red)">🚨 rm: refusing to remove '/' recursively.</span>\n  This isn't that kind of terminal.`,
+    isHtml: true,
+  }),
+
+  rm: () => ({
+    output: `  <span style="color: var(--red)">🚨 rm: refusing to remove '/' recursively.</span>\n  This isn't that kind of terminal.`,
+    isHtml: true,
+  }),
+
+  neofetch: () => ({
+    output: [
+      `  <span style="color: var(--green); font-weight: 600">joscha-koepke@mcp</span>`,
+      `  <span style="color: var(--green)">──────────────────</span>`,
+      `  <span style="color: var(--green)">OS:</span>      Product Brain v3.0`,
+      `  <span style="color: var(--green)">Host:</span>    San Francisco, CA`,
+      `  <span style="color: var(--green)">Kernel:</span>  Connectly AI`,
+      `  <span style="color: var(--green)">Uptime:</span>  ${new Date().getFullYear() - 2014} years in product`,
+      `  <span style="color: var(--green)">Shell:</span>   TypeScript / Python`,
+      `  <span style="color: var(--green)">DE:</span>      Espresso-Driven Development`,
+      `  <span style="color: var(--green)">Theme:</span>   Dark [always]`,
+      `  <span style="color: var(--green)">CPU:</span>     Caffeine-powered`,
+      `  <span style="color: var(--green)">GPU:</span>     Golden Retriever cuddles`,
+      `  <span style="color: var(--green)">Memory:</span>  Full of product opinions`,
+    ].join("\n"),
+    isHtml: true,
+  }),
+
+  coffee: () => ({
+    output: [
+      "  ☕ Brewing espresso...",
+      "",
+      "      ( (",
+      "       ) )",
+      "    ........",
+      "    |      |]",
+      "    \\      /",
+      "     `----'",
+      "",
+      `  <span style="color: var(--amber)">Perfect shot. 18g in, 36g out, 28 seconds.</span>`,
+    ].join("\n"),
+    isHtml: true,
+  }),
+
+  ls: () => ({
+    output: [
+      `  <span style="color: var(--green-dim)">drwxr-xr-x</span>  manifesto/`,
+      `  <span style="color: var(--green-dim)">drwxr-xr-x</span>  projects/`,
+      `  <span style="color: var(--green-dim)">drwxr-xr-x</span>  experience/`,
+      `  <span style="color: var(--green-dim)">-rw-r--r--</span>  bio.txt`,
+      `  <span style="color: var(--green-dim)">-rw-r--r--</span>  contact.json`,
+      `  <span style="color: var(--green-dim)">-rw-r--r--</span>  README.md`,
+      `\n  <span style="color: var(--text-muted)">Try 'help' for available commands.</span>`,
+    ].join("\n"),
+    isHtml: true,
+  }),
+
+  pwd: () => ({
+    output: "  /home/joscha",
+  }),
+
+  date: () => ({
+    output: `  ${new Date().toString()}`,
+  }),
+
+  echo: (args: string) => ({
+    output: `  ${args || ""}`,
+  }),
+
+  cat: () => ({
+    output: `  <span style="color: var(--text-muted)">🐱 meow. Try 'help' for actual commands.</span>`,
+    isHtml: true,
+  }),
+
+  exit: () => ({
+    output: `  <span style="color: var(--text-muted)">There is no escape. Type 'help' instead.</span>`,
+    isHtml: true,
+  }),
+
   clear: () => ({ output: "__CLEAR__" }),
 };
 
@@ -188,6 +281,21 @@ export function runCommand(input: string): CommandResult {
     if (commands[sub]) {
       return commands[sub]("");
     }
+  }
+
+  // Handle "rm -rf" and similar
+  if (trimmed.startsWith("rm ")) {
+    return commands["rm"]("");
+  }
+
+  // Handle "sudo" with anything after it
+  if (trimmed.startsWith("sudo")) {
+    return commands["sudo"]("");
+  }
+
+  // Handle "echo" with arguments
+  if (trimmed.startsWith("echo ")) {
+    return commands["echo"](trimmed.slice(5));
   }
 
   const [cmd, ...rest] = trimmed.split(/\s+/);
