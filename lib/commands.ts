@@ -132,7 +132,6 @@ const commands: Record<string, CommandHandler> = {
   contact: () => ({
     output: [
       `  <span style="color: var(--green)">email</span>     ${contact.email}`,
-      `  <span style="color: var(--green)">twitter</span>   ${contact.twitter}`,
       `  <span style="color: var(--green)">linkedin</span>  ${contact.linkedin}`,
       `  <span style="color: var(--green)">github</span>    ${contact.github}`,
       `  <span style="color: var(--green)">mcp</span>       ${contact.mcp_url}`,

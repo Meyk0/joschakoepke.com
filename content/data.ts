@@ -285,11 +285,11 @@ export const authoredArticles: Article[] = [
 ];
 
 export const contact: Contact = {
-  email: "hello@joschakoepke.com",
-  twitter: "https://twitter.com/joschakoepke",
+  email: "joschakoepke@gmail.com",
+  twitter: "",
   linkedin: "https://linkedin.com/in/joschakoepke",
   github: "https://github.com/Meyk0",
-  mcp_url: "https://mcp.joschakoepke.com/api/mcp",
+  mcp_url: "https://joschakoepke.com/api/mcp",
 };
 
 export const openToWork: OpenToWork = {
