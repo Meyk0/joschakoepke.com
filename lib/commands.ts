@@ -358,6 +358,31 @@ export function runCommand(input: string): CommandResult {
     };
   }
 
+  // Handle "cd" — navigate into "directories" shown by ls
+  if (trimmed.startsWith("cd ")) {
+    const target = trimmed.slice(3).replace(/\//g, "").trim();
+    const cdMap: Record<string, string> = {
+      manifesto: "manifesto",
+      projects: "projects",
+      experience: "experience",
+    };
+    if (cdMap[target]) {
+      return commands[cdMap[target]]("");
+    }
+    if (target === "bio.txt" || target === "bio") {
+      return commands["bio"]("");
+    }
+    if (target === "contact.json" || target === "contact") {
+      return commands["contact"]("");
+    }
+    return {
+      output: `  bash: cd: ${target}: No such file or directory`,
+    };
+  }
+  if (trimmed === "cd" || trimmed === "cd ~" || trimmed === "cd .") {
+    return { output: `  /home/joscha` };
+  }
+
   // Handle "echo" with arguments
   if (trimmed.startsWith("echo ")) {
     return commands["echo"](trimmed.slice(5));
