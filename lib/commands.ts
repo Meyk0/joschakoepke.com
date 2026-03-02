@@ -177,7 +177,6 @@ const commands: Record<string, CommandHandler> = {
       '  3. Ask Claude: <span style="color: var(--text-dim)">"Who is Joscha and what is he building?"</span>\n',
       "  Example queries:",
       '  • "What are Joscha\'s product principles?"',
-      '  • "Is Joscha open to new opportunities?"',
       '  • "What projects is Joscha working on?"',
     ].join("\n"),
     isHtml: true,
