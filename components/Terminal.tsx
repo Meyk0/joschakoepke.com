@@ -328,15 +328,17 @@ export default function Terminal() {
 
   return (
     <div
-      className="flex items-center justify-center min-h-screen px-10 py-6 sm:p-8 animate-page-load overflow-x-hidden"
+      className="min-h-screen w-full px-5 py-6 sm:p-8 animate-page-load overflow-x-hidden flex items-center justify-center"
       style={{ background: "var(--bg)" }}
     >
       <div
-        className="flex flex-col w-full max-w-5xl min-w-0 rounded-lg border overflow-hidden"
+        className="flex flex-col rounded-lg border overflow-hidden mx-auto"
         style={{
           background: "var(--surface)",
           borderColor: "var(--border)",
           height: "min(85vh, 900px)",
+          width: "100%",
+          maxWidth: "min(64rem, calc(100vw - 2.5rem))",
         }}
       >
         {/* Title bar */}
@@ -403,19 +405,19 @@ export default function Terminal() {
             <div style={{ color: "#00ff88" }}>{` / / /|`}</div>
             <div style={{ color: "#5fd7ff" }}>{`/_/_/ |_\\   Head of Product`}</div>
           </div>
-          {/* Mobile: JK block letters */}
-          <div className="mb-4 text-xs leading-none sm:hidden font-mono whitespace-pre">
-            <div style={{ color: "#ff5f56" }}>{` _ _  __`}</div>
-            <div style={{ color: "#ff9f43" }}>{`| | |/ /`}</div>
-            <div style={{ color: "#ffda6b" }}>{`| | | /`}</div>
-            <div style={{ color: "#00ff88" }}>{`|_| | \\`}</div>
-            <div style={{ color: "#5fd7ff" }}>{` \\_/|_|\\_\\`}</div>
-            <div className="mt-2 text-sm" style={{ color: "var(--green)" }}>
-              Joscha Koepke
-            </div>
-            <div className="text-xs" style={{ color: "var(--text-dim)" }}>
-              Head of Product
-            </div>
+          {/* Mobile: figlet-style JK */}
+          <div className="mb-3 text-[10px] leading-none sm:hidden font-mono whitespace-pre">
+            <div style={{ color: "#ff5f56" }}>{`     _ _  __`}</div>
+            <div style={{ color: "#ff9f43" }}>{`    | | |/ /`}</div>
+            <div style={{ color: "#ffda6b" }}>{` _  | | ' / `}</div>
+            <div style={{ color: "#00ff88" }}>{`| |_| | . \\ `}</div>
+            <div style={{ color: "#5fd7ff" }}>{` \\___/|_|\\_\\`}</div>
+          </div>
+          <div className="mb-1 text-sm font-bold sm:hidden" style={{ color: "var(--green)" }}>
+            Joscha Koepke
+          </div>
+          <div className="mb-4 text-xs sm:hidden" style={{ color: "var(--text-dim)" }}>
+            Head of Product
           </div>
 
           {/* Boot line */}
