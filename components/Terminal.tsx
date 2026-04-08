@@ -328,7 +328,7 @@ export default function Terminal() {
 
   return (
     <div
-      className="flex items-center justify-center min-h-screen px-5 py-6 sm:p-8 animate-page-load overflow-x-hidden"
+      className="flex items-center justify-center min-h-screen px-10 py-6 sm:p-8 animate-page-load overflow-x-hidden"
       style={{ background: "var(--bg)" }}
     >
       <div
@@ -403,13 +403,19 @@ export default function Terminal() {
             <div style={{ color: "#00ff88" }}>{` / / /|`}</div>
             <div style={{ color: "#5fd7ff" }}>{`/_/_/ |_\\   Head of Product`}</div>
           </div>
-          {/* Mobile: compact ASCII */}
-          <div className="mb-4 text-[9px] leading-none sm:hidden font-mono whitespace-pre">
-            <div style={{ color: "#ff5f56" }}>{`    __ __`}</div>
-            <div style={{ color: "#ff9f43" }}>{`   / / /<`}</div>
-            <div style={{ color: "#ffda6b" }}>{`  / / ,<    Joscha Koepke`}</div>
-            <div style={{ color: "#00ff88" }}>{` / / /|`}</div>
-            <div style={{ color: "#5fd7ff" }}>{`/_/_/ |_\\   Head of Product`}</div>
+          {/* Mobile: JK block letters */}
+          <div className="mb-4 text-xs leading-none sm:hidden font-mono whitespace-pre">
+            <div style={{ color: "#ff5f56" }}>{` _ _  __`}</div>
+            <div style={{ color: "#ff9f43" }}>{`| | |/ /`}</div>
+            <div style={{ color: "#ffda6b" }}>{`| | | /`}</div>
+            <div style={{ color: "#00ff88" }}>{`|_| | \\`}</div>
+            <div style={{ color: "#5fd7ff" }}>{` \\_/|_|\\_\\`}</div>
+            <div className="mt-2 text-sm" style={{ color: "var(--green)" }}>
+              Joscha Koepke
+            </div>
+            <div className="text-xs" style={{ color: "var(--text-dim)" }}>
+              Head of Product
+            </div>
           </div>
 
           {/* Boot line */}
