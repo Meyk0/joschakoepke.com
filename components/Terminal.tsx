@@ -328,11 +328,11 @@ export default function Terminal() {
 
   return (
     <div
-      className="flex items-center justify-center min-h-screen px-5 py-6 sm:p-8 animate-page-load"
+      className="flex items-center justify-center min-h-screen px-5 py-6 sm:p-8 animate-page-load overflow-x-hidden"
       style={{ background: "var(--bg)" }}
     >
       <div
-        className="flex flex-col w-full max-w-5xl rounded-lg border overflow-hidden"
+        className="flex flex-col w-full max-w-5xl min-w-0 rounded-lg border overflow-hidden"
         style={{
           background: "var(--surface)",
           borderColor: "var(--border)",
@@ -383,7 +383,7 @@ export default function Terminal() {
         {/* Terminal body */}
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 cursor-text"
+          className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden px-4 py-4 sm:px-6 sm:py-5 cursor-text"
           onClick={focusInput}
         >
           {/* ASCII banner — rainbow (desktop) */}
