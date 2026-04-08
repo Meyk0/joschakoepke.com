@@ -158,6 +158,15 @@ export const projects: Project[] = [
     tech: ["LLMs", "WhatsApp API", "TypeScript", "Python"],
   },
   {
+    name: "Standuparcade",
+    type: "side",
+    status: "shipped",
+    description:
+      "A fun slot machine to decide who presents next in a standup meeting. Spin the reels, land on a name.",
+    tech: ["React", "TypeScript"],
+    url: "https://standuparca.de",
+  },
+  {
     name: "EvalArena",
     type: "side",
     status: "active",
@@ -260,6 +269,12 @@ export const featuredArticles: Article[] = [
 ];
 
 export const authoredArticles: Article[] = [
+  {
+    title: "Building an AI Agent Takes Days. Landing One Takes Much Longer.",
+    url: "https://www.linkedin.com/pulse/building-ai-agent-takes-days-landing-one-much-longer-joscha-koepke-aakyc/",
+    publication: "LinkedIn",
+    year: 2026,
+  },
   {
     title: "Launching vs. Landing: Why Product Landings Matter More Than Launches",
     url: "https://www.linkedin.com/pulse/launching-vs-landing-why-product-landings-matter-more-joscha-koepke-dolhe/",
@@ -370,6 +385,7 @@ export const resume: ResumeData = {
   ],
   sideProjects: [
     "EvalArena: hands-on training platform for writing AI evals (LLM-as-judge, trace analysis, rubric design)",
+    "Standuparcade: slot-machine standup presenter picker (standuparca.de)",
     "MCP Task Creator",
     "AI Resume Analyzer",
     "Git Claude Commit",

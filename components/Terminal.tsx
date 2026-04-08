@@ -328,7 +328,7 @@ export default function Terminal() {
 
   return (
     <div
-      className="flex items-center justify-center min-h-screen p-4 sm:p-8 animate-page-load"
+      className="flex items-center justify-center min-h-screen px-5 py-6 sm:p-8 animate-page-load"
       style={{ background: "var(--bg)" }}
     >
       <div
@@ -383,7 +383,7 @@ export default function Terminal() {
         {/* Terminal body */}
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto px-6 py-5 cursor-text"
+          className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 cursor-text"
           onClick={focusInput}
         >
           {/* ASCII banner — rainbow (desktop) */}
@@ -403,12 +403,13 @@ export default function Terminal() {
             <div style={{ color: "#00ff88" }}>{` / / /|`}</div>
             <div style={{ color: "#5fd7ff" }}>{`/_/_/ |_\\   Head of Product`}</div>
           </div>
-          {/* Mobile: plain text */}
-          <div
-            className="mb-4 text-lg font-bold sm:hidden"
-            style={{ color: "var(--green)" }}
-          >
-            Joscha Koepke
+          {/* Mobile: compact ASCII */}
+          <div className="mb-4 text-[9px] leading-none sm:hidden font-mono whitespace-pre">
+            <div style={{ color: "#ff5f56" }}>{`    __ __`}</div>
+            <div style={{ color: "#ff9f43" }}>{`   / / /<`}</div>
+            <div style={{ color: "#ffda6b" }}>{`  / / ,<    Joscha Koepke`}</div>
+            <div style={{ color: "#00ff88" }}>{` / / /|`}</div>
+            <div style={{ color: "#5fd7ff" }}>{`/_/_/ |_\\   Head of Product`}</div>
           </div>
 
           {/* Boot line */}
