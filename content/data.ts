@@ -176,6 +176,15 @@ export const projects: Project[] = [
     url: "https://www.evalarena.xyz",
   },
   {
+    name: "EngramViz",
+    type: "side",
+    status: "active",
+    description:
+      "A 3D brain visualizer that makes LLM memory visible in real time.",
+    tech: ["Next.js", "TypeScript", "Three.js"],
+    url: "https://www.engramviz.com",
+  },
+  {
     name: "joschakoepke.com",
     type: "side",
     status: "active",
@@ -384,6 +393,7 @@ export const resume: ResumeData = {
     "Spanish (conversational)",
   ],
   sideProjects: [
+    "EngramViz: 3D brain visualizer that makes LLM memory visible in real time (engramviz.com)",
     "EvalArena: hands-on training platform for writing AI evals (LLM-as-judge, trace analysis, rubric design)",
     "Standuparcade: slot-machine standup presenter picker (standuparca.de)",
     "MCP Task Creator",
