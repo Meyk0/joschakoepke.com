@@ -197,6 +197,27 @@ button {
   background: rgba(255, 255, 255, 0.12);
 }
 
+.menu-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.92);
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.menu-search:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.menu-search span {
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 11px;
+}
+
 .desktop-icons {
   position: fixed;
   top: 54px;
@@ -372,8 +393,9 @@ button {
   position: absolute;
   right: 0;
   bottom: 0;
-  width: 18px;
-  height: 18px;
+  z-index: 3;
+  width: 24px;
+  height: 24px;
   cursor: nwse-resize;
 }
 
@@ -386,6 +408,127 @@ button {
   height: 8px;
   border-right: 2px solid rgba(15, 23, 42, 0.24);
   border-bottom: 2px solid rgba(15, 23, 42, 0.24);
+}
+
+.window-resize-edge {
+  position: absolute;
+  z-index: 2;
+}
+
+.window-resize-edge.right {
+  top: 36px;
+  right: 0;
+  bottom: 16px;
+  width: 8px;
+  cursor: ew-resize;
+}
+
+.window-resize-edge.bottom {
+  right: 16px;
+  bottom: 0;
+  left: 0;
+  height: 8px;
+  cursor: ns-resize;
+}
+
+.window-resize-edge:hover,
+.window-resize-handle:hover {
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.spotlight-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: flex;
+  justify-content: center;
+  padding-top: 78px;
+  background: rgba(2, 6, 23, 0.12);
+}
+
+.spotlight-panel {
+  width: min(680px, calc(100vw - 40px));
+  max-height: min(620px, calc(100vh - 120px));
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 18px;
+  background: rgba(248, 250, 252, 0.86);
+  box-shadow: 0 34px 110px rgba(0, 0, 0, 0.38);
+  color: #0f172a;
+  backdrop-filter: blur(28px) saturate(145%);
+}
+
+.spotlight-panel input {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.72);
+  color: #0f172a;
+  font-size: 24px;
+  line-height: 1.2;
+  outline: none;
+  padding: 20px 24px;
+}
+
+.spotlight-results {
+  max-height: 500px;
+  overflow: auto;
+  padding: 8px;
+}
+
+.spotlight-result {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 42px 1fr;
+  gap: 12px;
+  align-items: center;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  padding: 10px 12px;
+  color: #0f172a;
+  cursor: pointer;
+  text-align: left;
+}
+
+.spotlight-result.active,
+.spotlight-result:hover {
+  background: rgba(37, 99, 235, 0.12);
+}
+
+.spotlight-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #172033, #0a0f1c);
+  color: #7cffbd;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.spotlight-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.spotlight-copy strong {
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spotlight-copy small {
+  overflow: hidden;
+  color: #64748b;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .desktop-dock {

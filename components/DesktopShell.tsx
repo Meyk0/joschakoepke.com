@@ -31,6 +31,8 @@ type WindowState = {
   z: number;
 };
 
+type ResizeDirection = "right" | "bottom" | "corner";
+
 type Shortcut = {
   id: string;
   label: string;
@@ -186,6 +188,8 @@ export default function DesktopShell() {
   const [windows, setWindows] = useState(createInitialWindows);
   const [clock, setClock] = useState("");
   const [mobilePanel, setMobilePanel] = useState<TerminalAppId | null>(null);
+  const [spotlightOpen, setSpotlightOpen] = useState(false);
+  const [spotlightQuery, setSpotlightQuery] = useState("");
   const zRef = useRef(80);
   const dragRef = useRef<{
     id: TerminalAppId;
@@ -200,6 +204,7 @@ export default function DesktopShell() {
     startY: number;
     width: number;
     height: number;
+    direction: ResizeDirection;
   } | null>(null);
 
   useEffect(() => {
@@ -240,6 +245,22 @@ export default function DesktopShell() {
         },
       };
     });
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setSpotlightOpen(true);
+        trackEvent("spotlight_open", { source: "keyboard" });
+      }
+      if (event.key === "Escape") {
+        setSpotlightOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   const focusWindow = useCallback((id: TerminalAppId) => {
@@ -341,7 +362,8 @@ export default function DesktopShell() {
 
   const startResize = (
     id: TerminalAppId,
-    event: React.PointerEvent<HTMLDivElement>
+    event: React.PointerEvent<HTMLDivElement>,
+    direction: ResizeDirection
   ) => {
     const state = windows[id];
     if (state.maximized) return;
@@ -353,6 +375,7 @@ export default function DesktopShell() {
       startY: event.clientY,
       width: state.width,
       height: state.height,
+      direction,
     };
     focusWindow(id);
   };
@@ -380,8 +403,14 @@ export default function DesktopShell() {
         const resize = resizeRef.current;
         setWindows((prev) => {
           const state = prev[resize.id];
-          const width = resize.width + event.clientX - resize.startX;
-          const height = resize.height + event.clientY - resize.startY;
+          const width =
+            resize.direction === "right" || resize.direction === "corner"
+              ? resize.width + event.clientX - resize.startX
+              : state.width;
+          const height =
+            resize.direction === "bottom" || resize.direction === "corner"
+              ? resize.height + event.clientY - resize.startY
+              : state.height;
           return {
             ...prev,
             [resize.id]: {
@@ -423,7 +452,14 @@ export default function DesktopShell() {
       <div className="desktop-vignette" />
 
       <section className="hidden md:block">
-        <MenuBar clock={clock} openApp={openApp} />
+        <MenuBar
+          clock={clock}
+          openApp={openApp}
+          openSpotlight={() => {
+            setSpotlightOpen(true);
+            trackEvent("spotlight_open", { source: "menu" });
+          }}
+        />
 
         <div className="desktop-icons" aria-label="Desktop shortcuts">
           {shortcuts.map((shortcut) => (
@@ -444,11 +480,38 @@ export default function DesktopShell() {
             onMinimize={() => minimizeWindow(state.id)}
             onMaximize={() => toggleMaximize(state.id)}
             onDragStart={(event) => startDrag(state.id, event)}
-            onResizeStart={(event) => startResize(state.id, event)}
+            onResizeStart={(event, direction) =>
+              startResize(state.id, event, direction)
+            }
           >
             <WindowContent appId={state.id} openApp={openApp} />
           </DesktopWindow>
         ))}
+
+        {spotlightOpen && (
+          <Spotlight
+            query={spotlightQuery}
+            setQuery={setSpotlightQuery}
+            onClose={() => setSpotlightOpen(false)}
+            onSelect={(item) => {
+              setSpotlightOpen(false);
+              setSpotlightQuery("");
+              trackEvent("spotlight_select", {
+                item: item.label,
+                kind: item.kind,
+              });
+              if (item.href) {
+                trackEvent("outbound_link_click", {
+                  source: "spotlight",
+                  href: item.href,
+                });
+                window.open(item.href, "_blank", "noopener,noreferrer");
+                return;
+              }
+              openApp(item.appId, "spotlight");
+            }}
+          />
+        )}
 
         <Dock
           shortcuts={dockShortcuts}
@@ -473,9 +536,11 @@ export default function DesktopShell() {
 function MenuBar({
   clock,
   openApp,
+  openSpotlight,
 }: {
   clock: string;
   openApp: (id: TerminalAppId, source?: string) => void;
+  openSpotlight: () => void;
 }) {
   const items: Array<{ label: string; appId: TerminalAppId }> = [
     { label: "Projects", appId: "projects" },
@@ -503,8 +568,135 @@ function MenuBar({
         ))}
       </div>
       <div className="menu-right">
-        <span className="menu-pill">MCP live</span>
+        <button type="button" className="menu-search" onClick={openSpotlight}>
+          Search <span>⌘K</span>
+        </button>
         <span>{clock}</span>
+      </div>
+    </div>
+  );
+}
+
+type SpotlightItem = {
+  id: string;
+  label: string;
+  description: string;
+  kind: string;
+  appId: TerminalAppId;
+  href?: string;
+};
+
+function Spotlight({
+  query,
+  setQuery,
+  onClose,
+  onSelect,
+}: {
+  query: string;
+  setQuery: (value: string) => void;
+  onClose: () => void;
+  onSelect: (item: SpotlightItem) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const items = useMemo<SpotlightItem[]>(
+    () => [
+      {
+        id: "terminal",
+        label: "Terminal",
+        description: "Open the interactive portfolio terminal.",
+        kind: "App",
+        appId: "terminal",
+      },
+      {
+        id: "projects",
+        label: "Projects",
+        description: "Browse active and shipped projects.",
+        kind: "Folder",
+        appId: "projects",
+      },
+      {
+        id: "resume",
+        label: "Resume.pdf",
+        description: "View resume, impact metrics, and experience.",
+        kind: "Document",
+        appId: "resume",
+      },
+      {
+        id: "writing",
+        label: "Writing",
+        description: "Read authored articles and interviews.",
+        kind: "Folder",
+        appId: "writing",
+      },
+      {
+        id: "mcp",
+        label: "MCP Server",
+        description: "Inspect the public agent-readable profile endpoint.",
+        kind: "App",
+        appId: "mcp",
+      },
+      {
+        id: "about",
+        label: "About.txt",
+        description: "Short profile, focus areas, and contact links.",
+        kind: "Document",
+        appId: "about",
+      },
+      ...projects.map((project) => ({
+        id: `project-${project.name}`,
+        label: project.name,
+        description: project.description,
+        kind: "Project",
+        appId: "projects" as TerminalAppId,
+        href: project.url,
+      })),
+    ],
+    []
+  );
+
+  const normalized = query.trim().toLowerCase();
+  const results = items
+    .filter((item) => {
+      const haystack = `${item.label} ${item.description} ${item.kind}`.toLowerCase();
+      return !normalized || haystack.includes(normalized);
+    })
+    .slice(0, 8);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  return (
+    <div className="spotlight-backdrop" onMouseDown={onClose}>
+      <div className="spotlight-panel" onMouseDown={(event) => event.stopPropagation()}>
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && results[0]) {
+              onSelect(results[0]);
+            }
+          }}
+          placeholder="Search apps, projects, and files"
+          aria-label="Spotlight search"
+        />
+        <div className="spotlight-results">
+          {results.map((item, index) => (
+            <button
+              type="button"
+              key={item.id}
+              className={`spotlight-result ${index === 0 ? "active" : ""}`}
+              onClick={() => onSelect(item)}
+            >
+              <span className="spotlight-icon">{item.label.slice(0, 2).toUpperCase()}</span>
+              <span className="spotlight-copy">
+                <strong>{item.label}</strong>
+                <small>{item.kind} · {item.description}</small>
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -544,7 +736,10 @@ function DesktopWindow({
   onMinimize: () => void;
   onMaximize: () => void;
   onDragStart: (event: React.PointerEvent<HTMLDivElement>) => void;
-  onResizeStart: (event: React.PointerEvent<HTMLDivElement>) => void;
+  onResizeStart: (
+    event: React.PointerEvent<HTMLDivElement>,
+    direction: ResizeDirection
+  ) => void;
 }) {
   const hidden = !state.open || state.minimized;
   const style = state.maximized
@@ -569,16 +764,54 @@ function DesktopWindow({
     <section className="desktop-window" style={style} onPointerDown={onFocus}>
       <div className="window-titlebar" onPointerDown={onDragStart}>
         <div className="window-controls" onPointerDown={(event) => event.stopPropagation()}>
-          <button type="button" className="window-dot close" aria-label={`Close ${state.title}`} onClick={onClose} />
-          <button type="button" className="window-dot minimize" aria-label={`Minimize ${state.title}`} onClick={onMinimize} />
-          <button type="button" className="window-dot maximize" aria-label={`Maximize ${state.title}`} onClick={onMaximize} />
+          <button
+            type="button"
+            className="window-dot close"
+            aria-label={`Close ${state.title}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              onClose();
+            }}
+          />
+          <button
+            type="button"
+            className="window-dot minimize"
+            aria-label={`Minimize ${state.title}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              onMinimize();
+            }}
+          />
+          <button
+            type="button"
+            className="window-dot maximize"
+            aria-label={`Maximize ${state.title}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              onMaximize();
+            }}
+          />
         </div>
         <div className="window-title">{state.title}</div>
         <div className="window-title-spacer" />
       </div>
       <div className="window-body">{children}</div>
       {!state.maximized && (
-        <div className="window-resize-handle" onPointerDown={onResizeStart} />
+        <>
+          <div
+            className="window-resize-edge right"
+            onPointerDown={(event) => onResizeStart(event, "right")}
+          />
+          <div
+            className="window-resize-edge bottom"
+            onPointerDown={(event) => onResizeStart(event, "bottom")}
+          />
+          <div
+            className="window-resize-handle"
+            aria-label={`Resize ${state.title}`}
+            onPointerDown={(event) => onResizeStart(event, "corner")}
+          />
+        </>
       )}
     </section>
   );
@@ -838,7 +1071,7 @@ function MobileShell({
     <section className="mobile-shell md:hidden">
       <div className="mobile-menu-bar">
         <span>JoschaOS</span>
-        <span>{clock || formatClock(new Date(), true)}</span>
+        <span>{clock}</span>
       </div>
       <div className="mobile-terminal-frame">
         <Terminal

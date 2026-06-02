@@ -185,6 +185,24 @@ export const projects: Project[] = [
     url: "https://www.engramviz.com",
   },
   {
+    name: "Model Atlas",
+    type: "side",
+    status: "active",
+    description:
+      "A time-traveling 3D map of AI model releases, providers, lineage, benchmarks, and source evidence.",
+    tech: ["Next.js", "TypeScript", "3D Visualization"],
+    url: "https://www.model-atlas.com",
+  },
+  {
+    name: "RE Exam Prep",
+    type: "side",
+    status: "active",
+    description:
+      "A daily recall trainer for the California real estate exam.",
+    tech: ["Next.js", "TypeScript", "Education"],
+    url: "https://real-estate-quiz.vercel.app/",
+  },
+  {
     name: "joschakoepke.com",
     type: "side",
     status: "active",
@@ -394,6 +412,8 @@ export const resume: ResumeData = {
   ],
   sideProjects: [
     "EngramViz: 3D brain visualizer that makes LLM memory visible in real time (engramviz.com)",
+    "Model Atlas: time-traveling 3D map of AI model releases, providers, lineage, benchmarks, and source evidence",
+    "RE Exam Prep: daily recall trainer for the California real estate exam",
     "EvalArena: hands-on training platform for writing AI evals (LLM-as-judge, trace analysis, rubric design)",
     "Standuparcade: slot-machine standup presenter picker (standuparca.de)",
     "MCP Task Creator",
