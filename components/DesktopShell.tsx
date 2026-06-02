@@ -31,7 +31,15 @@ type WindowState = {
   z: number;
 };
 
-type ResizeDirection = "right" | "bottom" | "corner";
+type ResizeDirection =
+  | "top"
+  | "right"
+  | "bottom"
+  | "left"
+  | "top-left"
+  | "top-right"
+  | "bottom-right"
+  | "bottom-left";
 
 type Shortcut = {
   id: string;
@@ -202,6 +210,8 @@ export default function DesktopShell() {
     id: TerminalAppId;
     startX: number;
     startY: number;
+    x: number;
+    y: number;
     width: number;
     height: number;
     direction: ResizeDirection;
@@ -373,6 +383,8 @@ export default function DesktopShell() {
       id,
       startX: event.clientX,
       startY: event.clientY,
+      x: state.x,
+      y: state.y,
       width: state.width,
       height: state.height,
       direction,
@@ -403,20 +415,51 @@ export default function DesktopShell() {
         const resize = resizeRef.current;
         setWindows((prev) => {
           const state = prev[resize.id];
-          const width =
-            resize.direction === "right" || resize.direction === "corner"
-              ? resize.width + event.clientX - resize.startX
-              : state.width;
-          const height =
-            resize.direction === "bottom" || resize.direction === "corner"
-              ? resize.height + event.clientY - resize.startY
-              : state.height;
+          const deltaX = event.clientX - resize.startX;
+          const deltaY = event.clientY - resize.startY;
+          const affectsLeft = resize.direction.includes("left");
+          const affectsRight = resize.direction.includes("right");
+          const affectsTop = resize.direction.includes("top");
+          const affectsBottom = resize.direction.includes("bottom");
+          const maxRight = window.innerWidth - resize.x - 12;
+          const maxBottom = window.innerHeight - resize.y - 88;
+
+          let width = resize.width;
+          let height = resize.height;
+          let x = resize.x;
+          let y = resize.y;
+
+          if (affectsRight) {
+            width = clamp(resize.width + deltaX, state.minWidth, maxRight);
+          }
+          if (affectsBottom) {
+            height = clamp(resize.height + deltaY, state.minHeight, maxBottom);
+          }
+          if (affectsLeft) {
+            width = clamp(
+              resize.width - deltaX,
+              state.minWidth,
+              resize.x + resize.width - 8
+            );
+            x = resize.x + resize.width - width;
+          }
+          if (affectsTop) {
+            height = clamp(
+              resize.height - deltaY,
+              state.minHeight,
+              resize.y + resize.height - 34
+            );
+            y = resize.y + resize.height - height;
+          }
+
           return {
             ...prev,
             [resize.id]: {
               ...state,
-              width: clamp(width, state.minWidth, window.innerWidth - state.x - 12),
-              height: clamp(height, state.minHeight, window.innerHeight - state.y - 88),
+              x,
+              y,
+              width,
+              height,
             },
           };
         });
@@ -807,9 +850,29 @@ function DesktopWindow({
             onPointerDown={(event) => onResizeStart(event, "bottom")}
           />
           <div
-            className="window-resize-handle"
+            className="window-resize-edge left"
+            onPointerDown={(event) => onResizeStart(event, "left")}
+          />
+          <div
+            className="window-resize-edge top"
+            onPointerDown={(event) => onResizeStart(event, "top")}
+          />
+          <div
+            className="window-resize-corner top-left"
+            onPointerDown={(event) => onResizeStart(event, "top-left")}
+          />
+          <div
+            className="window-resize-corner top-right"
+            onPointerDown={(event) => onResizeStart(event, "top-right")}
+          />
+          <div
+            className="window-resize-corner bottom-left"
+            onPointerDown={(event) => onResizeStart(event, "bottom-left")}
+          />
+          <div
+            className="window-resize-corner bottom-right window-resize-handle"
             aria-label={`Resize ${state.title}`}
-            onPointerDown={(event) => onResizeStart(event, "corner")}
+            onPointerDown={(event) => onResizeStart(event, "bottom-right")}
           />
         </>
       )}

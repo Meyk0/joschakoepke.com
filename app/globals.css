@@ -389,23 +389,49 @@ button {
   overflow: hidden;
 }
 
-.window-resize-handle {
+.window-resize-corner {
   position: absolute;
+  z-index: 3;
+  width: 26px;
+  height: 26px;
+}
+
+.window-resize-corner.top-left {
+  top: 0;
+  left: 0;
+  cursor: nwse-resize;
+}
+
+.window-resize-corner.top-right {
+  top: 0;
+  right: 0;
+  cursor: nesw-resize;
+}
+
+.window-resize-corner.bottom-right {
   right: 0;
   bottom: 0;
-  z-index: 3;
-  width: 24px;
-  height: 24px;
   cursor: nwse-resize;
+}
+
+.window-resize-corner.bottom-left {
+  bottom: 0;
+  left: 0;
+  cursor: nesw-resize;
+}
+
+.window-resize-handle {
+  width: 34px;
+  height: 34px;
 }
 
 .window-resize-handle::after {
   content: "";
   position: absolute;
-  right: 5px;
-  bottom: 5px;
-  width: 8px;
-  height: 8px;
+  right: 7px;
+  bottom: 7px;
+  width: 12px;
+  height: 12px;
   border-right: 2px solid rgba(15, 23, 42, 0.24);
   border-bottom: 2px solid rgba(15, 23, 42, 0.24);
 }
@@ -415,24 +441,40 @@ button {
   z-index: 2;
 }
 
+.window-resize-edge.top {
+  top: 0;
+  right: 24px;
+  left: 24px;
+  height: 8px;
+  cursor: ns-resize;
+}
+
 .window-resize-edge.right {
   top: 36px;
   right: 0;
-  bottom: 16px;
+  bottom: 24px;
   width: 8px;
   cursor: ew-resize;
 }
 
 .window-resize-edge.bottom {
-  right: 16px;
+  right: 24px;
   bottom: 0;
-  left: 0;
+  left: 24px;
   height: 8px;
   cursor: ns-resize;
 }
 
+.window-resize-edge.left {
+  top: 36px;
+  bottom: 24px;
+  left: 0;
+  width: 8px;
+  cursor: ew-resize;
+}
+
 .window-resize-edge:hover,
-.window-resize-handle:hover {
+.window-resize-corner:hover {
   background: rgba(37, 99, 235, 0.08);
 }
 
