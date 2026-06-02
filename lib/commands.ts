@@ -39,6 +39,13 @@ function normalize(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+function slug(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
 function appFromAlias(value: string): TerminalAppId | null {
   const aliases: Record<string, TerminalAppId> = {
     terminal: "terminal",
@@ -132,6 +139,7 @@ const commands: Record<string, CommandHandler> = {
       "  grep          Search portfolio data",
       "  cat           Read files (try: cat bio.txt)",
       "  clear         Clear terminal\n",
+      `  <span style="color: var(--text-muted)">Tip: Tab completes commands, apps, files, and projects.</span>`,
       `  <span style="color: var(--text-muted)">Also: theme, sound, history, dog, coffee, ls, pwd, date</span>`,
     ].join("\n"),
     isHtml: true,
@@ -511,6 +519,32 @@ const commands: Record<string, CommandHandler> = {
 };
 
 export const commandNames = Object.keys(commands);
+export const terminalAppNames: TerminalAppId[] = [
+  "terminal",
+  "projects",
+  "resume",
+  "writing",
+  "mcp",
+  "about",
+  "coffee",
+];
+export const terminalFileNames = [
+  "bio.txt",
+  "contact.json",
+  "coffee.txt",
+  "README.md",
+  ...projects.map((project) => `projects/${slug(project.name)}.md`),
+];
+export const terminalProjectNames = projects.map((project) => slug(project.name));
+export const terminalDirectoryNames = [
+  "about",
+  "manifesto",
+  "projects",
+  "experience",
+  "writing",
+  "resume",
+  "mcp",
+];
 
 export function runCommand(input: string): CommandResult {
   const trimmed = input.trim().toLowerCase();

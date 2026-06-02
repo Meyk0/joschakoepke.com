@@ -6,6 +6,10 @@ import {
   commandNames,
   CommandResult,
   TerminalAppId,
+  terminalAppNames,
+  terminalDirectoryNames,
+  terminalFileNames,
+  terminalProjectNames,
 } from "@/lib/commands";
 import { trackEvent } from "@/lib/analytics";
 import CommandOutput from "./CommandOutput";
@@ -26,6 +30,76 @@ interface TerminalProps {
 const WELCOME_LINE =
   "Welcome. I'm Joscha Koepke - I love espresso and Golden Retrievers.";
 
+const baseCommandNames = Array.from(
+  new Set([
+    ...commandNames.filter((command) => !command.includes(" ")),
+    "cd",
+    "git",
+    "history",
+    "sound",
+    "theme",
+  ])
+).sort();
+const themeNames = ["dark", "light", "matrix"];
+const soundNames = ["on", "off"];
+const mcpSubcommands = ["tools", "connect"];
+const gitCompletions = ["git log", "git log --oneline", "git status"];
+
+function completionsForInput(value: string) {
+  const trimmedStart = value.trimStart().toLowerCase();
+  if (!trimmedStart) return [];
+
+  const hasSpace = /\s/.test(trimmedStart);
+  const hasTrailingSpace = /\s$/.test(value);
+  const [command = "", ...rest] = trimmedStart.split(/\s+/);
+  const argPrefix = hasTrailingSpace ? "" : rest.join(" ");
+
+  if (!hasSpace) {
+    return baseCommandNames.filter((candidate) =>
+      candidate.startsWith(trimmedStart)
+    );
+  }
+
+  if (command === "open") {
+    return completeArgument(command, argPrefix, terminalAppNames);
+  }
+  if (command === "cat") {
+    return completeArgument(command, argPrefix, terminalFileNames);
+  }
+  if (command === "project") {
+    return completeArgument(command, argPrefix, terminalProjectNames);
+  }
+  if (command === "cd") {
+    return completeArgument(command, argPrefix, terminalDirectoryNames);
+  }
+  if (command === "theme") {
+    return completeArgument(command, argPrefix, themeNames);
+  }
+  if (command === "sound") {
+    return completeArgument(command, argPrefix, soundNames);
+  }
+  if (command === "mcp") {
+    return completeArgument(command, argPrefix, mcpSubcommands);
+  }
+  if (command === "git") {
+    return gitCompletions.filter((candidate) =>
+      candidate.startsWith(trimmedStart)
+    );
+  }
+
+  return [];
+}
+
+function completeArgument(
+  command: string,
+  argPrefix: string,
+  candidates: string[]
+) {
+  return candidates
+    .filter((candidate) => candidate.toLowerCase().startsWith(argPrefix))
+    .map((candidate) => `${command} ${candidate}`);
+}
+
 export default function Terminal({
   embedded = false,
   className = "",
@@ -45,6 +119,10 @@ export default function Terminal({
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const completionCycleRef = useRef<{
+    matches: string[];
+    index: number;
+  } | null>(null);
 
   useEffect(() => {
     let i = 0;
@@ -210,6 +288,7 @@ export default function Terminal({
     setInput("");
     setAutocomplete([]);
     setAcIndex(-1);
+    completionCycleRef.current = null;
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -233,11 +312,13 @@ export default function Terminal({
         setInput(autocomplete[acIndex]);
         setAutocomplete([]);
         setAcIndex(-1);
+        completionCycleRef.current = null;
         return;
       }
       if (e.key === "Escape") {
         setAutocomplete([]);
         setAcIndex(-1);
+        completionCycleRef.current = null;
         return;
       }
     }
@@ -248,6 +329,7 @@ export default function Terminal({
         const newIndex = historyIndex + 1;
         setHistoryIndex(newIndex);
         setInput(commandHistory[newIndex]);
+        completionCycleRef.current = null;
       }
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -255,32 +337,49 @@ export default function Terminal({
         const newIndex = historyIndex - 1;
         setHistoryIndex(newIndex);
         setInput(commandHistory[newIndex]);
+        completionCycleRef.current = null;
       } else if (historyIndex === 0) {
         setHistoryIndex(-1);
         setInput("");
+        completionCycleRef.current = null;
       }
     } else if (e.key === "Tab") {
       e.preventDefault();
-      const trimmed = input.trim().toLowerCase();
-      if (!trimmed) return;
+      const cycle = completionCycleRef.current;
+      if (
+        cycle &&
+        cycle.matches.length > 1 &&
+        cycle.matches[cycle.index] === input
+      ) {
+        const index = (cycle.index + 1) % cycle.matches.length;
+        completionCycleRef.current = { matches: cycle.matches, index };
+        setInput(cycle.matches[index]);
+        setAutocomplete(cycle.matches);
+        setAcIndex(index);
+        return;
+      }
 
-      const allCommands = [...commandNames, "history", "theme", "sound"];
-      const matches = allCommands.filter((c) => c.startsWith(trimmed));
+      const matches = completionsForInput(input);
       if (matches.length === 1) {
         setInput(matches[0]);
         setAutocomplete([]);
         setAcIndex(-1);
+        completionCycleRef.current = null;
       } else if (matches.length > 1) {
+        setInput(matches[0]);
         setAutocomplete(matches);
         setAcIndex(0);
+        completionCycleRef.current = { matches, index: 0 };
       } else {
         playBeep(440, 80);
+        completionCycleRef.current = null;
       }
     } else {
       if (autocomplete.length > 0) {
         setAutocomplete([]);
         setAcIndex(-1);
       }
+      completionCycleRef.current = null;
       if (soundEnabled && e.key.length === 1) {
         playBeep(800 + Math.random() * 200, 15);
       }
@@ -391,7 +490,12 @@ export default function Terminal({
               ref={inputRef}
               type="text"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                setInput(e.target.value);
+                setAutocomplete([]);
+                setAcIndex(-1);
+                completionCycleRef.current = null;
+              }}
               onKeyDown={handleKeyDown}
               className="w-full bg-transparent outline-none caret-transparent"
               style={{
@@ -439,6 +543,7 @@ export default function Terminal({
                   setInput(cmd);
                   setAutocomplete([]);
                   setAcIndex(-1);
+                  completionCycleRef.current = null;
                   inputRef.current?.focus();
                 }}
               >
