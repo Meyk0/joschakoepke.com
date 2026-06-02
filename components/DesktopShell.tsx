@@ -50,6 +50,11 @@ type Shortcut = {
   initials?: string;
 };
 
+type IconPosition = {
+  x: number;
+  y: number;
+};
+
 const windowDefaults: Record<TerminalAppId, Omit<WindowState, "id" | "open" | "minimized" | "maximized" | "z">> = {
   terminal: {
     title: "Terminal",
@@ -133,6 +138,9 @@ const DesktopEdgeGap = 8;
 const DesktopTopGap = 38;
 const DesktopBottomGap = 88;
 const WindowTitlebarHeight = 36;
+const DesktopIconWidth = 96;
+const DesktopIconHeight = 98;
+const DesktopIconDragThreshold = 4;
 
 function createInitialWindows(): Record<TerminalAppId, WindowState> {
   return Object.entries(windowDefaults).reduce((acc, [id, defaults], index) => {
@@ -147,6 +155,18 @@ function createInitialWindows(): Record<TerminalAppId, WindowState> {
     };
     return acc;
   }, {} as Record<TerminalAppId, WindowState>);
+}
+
+function createInitialIconPositions(): Record<string, IconPosition> {
+  return shortcuts.reduce((acc, shortcut, index) => {
+    const column = index % 2;
+    const row = Math.floor(index / 2);
+    acc[shortcut.id] = {
+      x: 22 + column * 112,
+      y: 54 + row * 114,
+    };
+    return acc;
+  }, {} as Record<string, IconPosition>);
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -170,6 +190,18 @@ function getDragBounds(state: Pick<WindowState, "width" | "height">) {
       fullMaxY >= DesktopTopGap
         ? fullMaxY
         : Math.max(DesktopTopGap, titlebarVisibleMaxY),
+  };
+}
+
+function getIconBounds() {
+  return {
+    minX: DesktopEdgeGap,
+    maxX: Math.max(DesktopEdgeGap, window.innerWidth - DesktopIconWidth - DesktopEdgeGap),
+    minY: DesktopTopGap,
+    maxY: Math.max(
+      DesktopTopGap,
+      window.innerHeight - DesktopIconHeight - DesktopBottomGap
+    ),
   };
 }
 
@@ -209,11 +241,13 @@ function TrackedLink({
 
 export default function DesktopShell() {
   const [windows, setWindows] = useState(createInitialWindows);
+  const [iconPositions, setIconPositions] = useState(createInitialIconPositions);
   const [clock, setClock] = useState("");
   const [mobilePanel, setMobilePanel] = useState<TerminalAppId | null>(null);
   const [spotlightOpen, setSpotlightOpen] = useState(false);
   const [spotlightQuery, setSpotlightQuery] = useState("");
   const zRef = useRef(80);
+  const suppressIconOpenRef = useRef<string | null>(null);
   const dragRef = useRef<{
     id: TerminalAppId;
     startX: number;
@@ -230,6 +264,14 @@ export default function DesktopShell() {
     width: number;
     height: number;
     direction: ResizeDirection;
+  } | null>(null);
+  const iconDragRef = useRef<{
+    id: string;
+    startX: number;
+    startY: number;
+    x: number;
+    y: number;
+    hasMoved: boolean;
   } | null>(null);
 
   useEffect(() => {
@@ -354,6 +396,10 @@ export default function DesktopShell() {
   };
 
   const openShortcut = (shortcut: Shortcut, source = "icon") => {
+    if (source === "icon" && suppressIconOpenRef.current === shortcut.id) {
+      suppressIconOpenRef.current = null;
+      return;
+    }
     trackEvent("desktop_icon_click", { icon: shortcut.id, type: shortcut.type });
     if (shortcut.href) {
       trackEvent("outbound_link_click", {
@@ -366,6 +412,25 @@ export default function DesktopShell() {
     if (shortcut.appId) {
       openApp(shortcut.appId, source);
     }
+  };
+
+  const startIconDrag = (
+    id: string,
+    event: React.PointerEvent<HTMLButtonElement>
+  ) => {
+    if (event.button !== 0) return;
+    const position = iconPositions[id];
+    if (!position) return;
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    iconDragRef.current = {
+      id,
+      startX: event.clientX,
+      startY: event.clientY,
+      x: position.x,
+      y: position.y,
+      hasMoved: false,
+    };
   };
 
   const startDrag = (
@@ -427,6 +492,24 @@ export default function DesktopShell() {
         });
       }
 
+      if (iconDragRef.current) {
+        const drag = iconDragRef.current;
+        const deltaX = event.clientX - drag.startX;
+        const deltaY = event.clientY - drag.startY;
+        const distance = Math.hypot(deltaX, deltaY);
+        if (distance >= DesktopIconDragThreshold) {
+          drag.hasMoved = true;
+          const bounds = getIconBounds();
+          setIconPositions((prev) => ({
+            ...prev,
+            [drag.id]: {
+              x: clampToRange(drag.x + deltaX, bounds.minX, bounds.maxX),
+              y: clampToRange(drag.y + deltaY, bounds.minY, bounds.maxY),
+            },
+          }));
+        }
+      }
+
       if (resizeRef.current) {
         const resize = resizeRef.current;
         setWindows((prev) => {
@@ -483,8 +566,18 @@ export default function DesktopShell() {
     };
 
     const handleUp = () => {
+      if (iconDragRef.current?.hasMoved) {
+        const draggedId = iconDragRef.current.id;
+        suppressIconOpenRef.current = draggedId;
+        window.setTimeout(() => {
+          if (suppressIconOpenRef.current === draggedId) {
+            suppressIconOpenRef.current = null;
+          }
+        }, 0);
+      }
       dragRef.current = null;
       resizeRef.current = null;
+      iconDragRef.current = null;
     };
 
     window.addEventListener("pointermove", handleMove);
@@ -525,7 +618,9 @@ export default function DesktopShell() {
             <DesktopIcon
               key={shortcut.id}
               shortcut={shortcut}
+              position={iconPositions[shortcut.id]}
               onOpen={() => openShortcut(shortcut)}
+              onDragStart={(event) => startIconDrag(shortcut.id, event)}
             />
           ))}
         </div>
@@ -760,13 +855,23 @@ function Spotlight({
 
 function DesktopIcon({
   shortcut,
+  position,
   onOpen,
+  onDragStart,
 }: {
   shortcut: Shortcut;
+  position: IconPosition;
   onOpen: () => void;
+  onDragStart: (event: React.PointerEvent<HTMLButtonElement>) => void;
 }) {
   return (
-    <button type="button" className="desktop-icon" onClick={onOpen}>
+    <button
+      type="button"
+      className="desktop-icon"
+      style={{ left: position.x, top: position.y }}
+      onPointerDown={onDragStart}
+      onClick={onOpen}
+    >
       <span className={`desktop-icon-symbol ${shortcut.type}`}>
         <span>{shortcut.initials}</span>
       </span>
