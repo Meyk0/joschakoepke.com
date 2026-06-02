@@ -129,6 +129,11 @@ const shortcuts: Shortcut[] = [
   { id: "coffee", label: "Coffee.txt", type: "file", appId: "coffee", initials: "CF" },
 ];
 
+const DesktopEdgeGap = 8;
+const DesktopTopGap = 38;
+const DesktopBottomGap = 88;
+const WindowTitlebarHeight = 36;
+
 function createInitialWindows(): Record<TerminalAppId, WindowState> {
   return Object.entries(windowDefaults).reduce((acc, [id, defaults], index) => {
     const appId = id as TerminalAppId;
@@ -146,6 +151,26 @@ function createInitialWindows(): Record<TerminalAppId, WindowState> {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
+}
+
+function clampToRange(value: number, min: number, max: number) {
+  return clamp(value, min, Math.max(min, max));
+}
+
+function getDragBounds(state: Pick<WindowState, "width" | "height">) {
+  const fullMaxY = window.innerHeight - state.height - DesktopBottomGap;
+  const titlebarVisibleMaxY =
+    window.innerHeight - DesktopBottomGap - WindowTitlebarHeight;
+
+  return {
+    minX: DesktopEdgeGap,
+    maxX: Math.max(DesktopEdgeGap, window.innerWidth - state.width - DesktopEdgeGap),
+    minY: DesktopTopGap,
+    maxY:
+      fullMaxY >= DesktopTopGap
+        ? fullMaxY
+        : Math.max(DesktopTopGap, titlebarVisibleMaxY),
+  };
 }
 
 function formatClock(date: Date, compact = false) {
@@ -229,10 +254,10 @@ export default function DesktopShell() {
       );
       const x = clamp(
         Math.max(230, Math.round((window.innerWidth - width) / 2)),
-        8,
-        window.innerWidth - width - 8
+        DesktopEdgeGap,
+        Math.max(DesktopEdgeGap, window.innerWidth - width - DesktopEdgeGap)
       );
-      const y = clamp(76, 34, window.innerHeight - height - 84);
+      const y = clampToRange(76, DesktopTopGap, getDragBounds({ width, height }).maxY);
 
       return {
         ...prev,
@@ -390,12 +415,13 @@ export default function DesktopShell() {
           const state = prev[drag.id];
           const nextX = drag.x + event.clientX - drag.startX;
           const nextY = drag.y + event.clientY - drag.startY;
+          const bounds = getDragBounds(state);
           return {
             ...prev,
             [drag.id]: {
               ...state,
-              x: clamp(nextX, 8, window.innerWidth - state.width - 8),
-              y: clamp(nextY, 34, window.innerHeight - state.height - 84),
+              x: clampToRange(nextX, bounds.minX, bounds.maxX),
+              y: clampToRange(nextY, bounds.minY, bounds.maxY),
             },
           };
         });
@@ -412,7 +438,7 @@ export default function DesktopShell() {
           const affectsTop = resize.direction.includes("top");
           const affectsBottom = resize.direction.includes("bottom");
           const maxRight = window.innerWidth - resize.x - 12;
-          const maxBottom = window.innerHeight - resize.y - 88;
+          const maxBottom = window.innerHeight - resize.y - DesktopBottomGap;
 
           let width = resize.width;
           let height = resize.height;
@@ -420,24 +446,24 @@ export default function DesktopShell() {
           let y = resize.y;
 
           if (affectsRight) {
-            width = clamp(resize.width + deltaX, state.minWidth, maxRight);
+            width = clampToRange(resize.width + deltaX, state.minWidth, maxRight);
           }
           if (affectsBottom) {
-            height = clamp(resize.height + deltaY, state.minHeight, maxBottom);
+            height = clampToRange(resize.height + deltaY, state.minHeight, maxBottom);
           }
           if (affectsLeft) {
-            width = clamp(
+            width = clampToRange(
               resize.width - deltaX,
               state.minWidth,
-              resize.x + resize.width - 8
+              resize.x + resize.width - DesktopEdgeGap
             );
             x = resize.x + resize.width - width;
           }
           if (affectsTop) {
-            height = clamp(
+            height = clampToRange(
               resize.height - deltaY,
               state.minHeight,
-              resize.y + resize.height - 34
+              resize.y + resize.height - DesktopTopGap
             );
             y = resize.y + resize.height - height;
           }
