@@ -8,17 +8,110 @@ import {
   contact,
   openToWork,
   mcpTools,
+  resume,
 } from "@/content/data";
+
+export type TerminalAppId =
+  | "terminal"
+  | "projects"
+  | "resume"
+  | "writing"
+  | "mcp"
+  | "about"
+  | "coffee"
+  | "roadmaps";
 
 export interface CommandResult {
   output: string;
   isHtml?: boolean;
+  action?: {
+    type: "open_app";
+    appId: TerminalAppId;
+  };
 }
 
 type CommandHandler = (args: string) => CommandResult;
 
 function link(url: string, text: string): string {
   return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: var(--green-dim); text-decoration: underline; text-decoration-color: var(--green-muted); text-underline-offset: 2px">${text}</a>`;
+}
+
+function normalize(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function appFromAlias(value: string): TerminalAppId | null {
+  const aliases: Record<string, TerminalAppId> = {
+    terminal: "terminal",
+    term: "terminal",
+    projects: "projects",
+    project: "projects",
+    resume: "resume",
+    cv: "resume",
+    writing: "writing",
+    articles: "writing",
+    mcp: "mcp",
+    server: "mcp",
+    about: "about",
+    bio: "about",
+    coffee: "coffee",
+    roadmap: "roadmaps",
+    roadmaps: "roadmaps",
+    trash: "roadmaps",
+  };
+
+  return aliases[normalize(value)] ?? null;
+}
+
+function projectByName(value: string) {
+  const wanted = normalize(value);
+  return projects.find((project) => normalize(project.name).includes(wanted));
+}
+
+function projectDetails(value: string): CommandResult {
+  const project = projectByName(value);
+  if (!project) {
+    return {
+      output: `  No project matched "${value}". Try: project engramviz, project evalarena, or projects.`,
+    };
+  }
+
+  return {
+    output: [
+      `  <span style="color: var(--green); font-weight: 600">${project.name}</span>`,
+      `  <span style="color: var(--text-muted)">${project.type} · ${project.status}</span>\n`,
+      `  ${project.description}\n`,
+      `  <span style="color: var(--text-muted)">tech: ${project.tech.join(", ")}</span>`,
+      project.url ? `  ${link(project.url, project.url)}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n"),
+    isHtml: true,
+  };
+}
+
+function searchableRows() {
+  return [
+    ["bio", bio.summary],
+    ...bio.tags.map((tag) => ["tag", tag]),
+    ...projects.map((project) => [
+      "project",
+      `${project.name} ${project.description} ${project.tech.join(" ")}`,
+    ]),
+    ...featuredArticles.map((article) => [
+      "featured",
+      `${article.title} ${article.publication} ${article.year}`,
+    ]),
+    ...authoredArticles.map((article) => [
+      "authored",
+      `${article.title} ${article.publication} ${article.year}`,
+    ]),
+    ...manifesto.map((entry) => [
+      "manifesto",
+      `${entry.title} ${entry.body}`,
+    ]),
+    ...resume.selectedImpact.map((impact) => ["impact", impact]),
+  ];
 }
 
 const commands: Record<string, CommandHandler> = {
@@ -37,6 +130,11 @@ const commands: Record<string, CommandHandler> = {
       "  mcp           About the MCP server",
       "  mcp tools     List all MCP tool signatures",
       "  mcp connect   How to connect from Claude",
+      "  open          Open a desktop app (try: open projects)",
+      "  project       Project details (try: project engramviz)",
+      "  tree          Show the portfolio filesystem",
+      "  grep          Search portfolio data",
+      "  cat           Read files (try: cat bio.txt)",
       "  clear         Clear terminal\n",
       `  <span style="color: var(--text-muted)">Also: theme, sound, history, dog, coffee, ls, pwd, date</span>`,
     ].join("\n"),
@@ -148,6 +246,76 @@ const commands: Record<string, CommandHandler> = {
     isHtml: true,
   }),
 
+  open: (args: string) => {
+    const appId = appFromAlias(args.trim());
+    if (!appId) {
+      return {
+        output:
+          "  Usage: open projects | resume | writing | mcp | about | coffee",
+      };
+    }
+
+    return {
+      output: `  Opening ${appId}.`,
+      action: { type: "open_app", appId },
+    };
+  },
+
+  project: (args: string) => {
+    const trimmed = args.trim();
+    if (!trimmed) {
+      return {
+        output: "  Usage: project <name>\n  Try: project engramviz",
+      };
+    }
+    return projectDetails(trimmed);
+  },
+
+  tree: () => ({
+    output: [
+      "  /home/joscha",
+      "  ├── bio.txt",
+      "  ├── contact.json",
+      "  ├── coffee.txt",
+      "  ├── README.md",
+      "  ├── projects/",
+      ...projects.map((project) => `  │   ├── ${normalize(project.name)}.md`),
+      "  ├── writing/",
+      "  │   ├── featured.md",
+      "  │   └── authored.md",
+      "  ├── resume/",
+      "  │   └── impact.md",
+      "  └── mcp/",
+      "      ├── endpoint.url",
+      "      └── tools.json",
+    ].join("\n"),
+  }),
+
+  grep: (args: string) => {
+    const term = args.trim().toLowerCase();
+    if (!term) {
+      return { output: "  Usage: grep <term>" };
+    }
+
+    const matches = searchableRows()
+      .filter(([, text]) => text.toLowerCase().includes(term))
+      .slice(0, 8);
+
+    if (!matches.length) {
+      return { output: `  No matches for "${term}".` };
+    }
+
+    return {
+      output: matches
+        .map(
+          ([scope, text]) =>
+            `  <span style="color: var(--green-dim)">${scope}</span>  ${text}`
+        )
+        .join("\n"),
+      isHtml: true,
+    };
+  },
+
   mcp: () => ({
     output: [
       `  <span style="color: var(--green); font-weight: 600">MCP Server — joscha-koepke v1.0.0</span>\n`,
@@ -246,11 +414,15 @@ const commands: Record<string, CommandHandler> = {
 
   ls: () => ({
     output: [
+      `  <span style="color: var(--green-dim)">drwxr-xr-x</span>  about/`,
       `  <span style="color: var(--green-dim)">drwxr-xr-x</span>  manifesto/`,
       `  <span style="color: var(--green-dim)">drwxr-xr-x</span>  projects/`,
       `  <span style="color: var(--green-dim)">drwxr-xr-x</span>  experience/`,
+      `  <span style="color: var(--green-dim)">drwxr-xr-x</span>  writing/`,
+      `  <span style="color: var(--green-dim)">drwxr-xr-x</span>  mcp/`,
       `  <span style="color: var(--green-dim)">-rw-r--r--</span>  bio.txt`,
       `  <span style="color: var(--green-dim)">-rw-r--r--</span>  contact.json`,
+      `  <span style="color: var(--green-dim)">-rw-r--r--</span>  coffee.txt`,
       `  <span style="color: var(--green-dim)">-rw-r--r--</span>  README.md`,
       `\n  <span style="color: var(--text-muted)">Try 'help' for available commands.</span>`,
     ].join("\n"),
@@ -269,10 +441,40 @@ const commands: Record<string, CommandHandler> = {
     output: `  ${args || ""}`,
   }),
 
-  cat: () => ({
-    output: `  <span style="color: var(--text-muted)">🐱 meow. Try 'help' for actual commands.</span>`,
-    isHtml: true,
-  }),
+  cat: (args: string) => {
+    const target = args.trim().toLowerCase().replace(/^\.\//, "");
+    if (!target) {
+      return {
+        output: "  Usage: cat bio.txt | contact.json | coffee.txt | projects/engramviz.md",
+      };
+    }
+
+    if (target === "bio.txt" || target === "bio") {
+      return commands.bio("");
+    }
+    if (target === "contact.json" || target === "contact") {
+      return commands.contact("");
+    }
+    if (target === "coffee.txt" || target === "coffee") {
+      return commands.coffee("");
+    }
+    if (target === "readme.md" || target === "readme") {
+      return {
+        output: [
+          "  joschakoepke.com is a terminal-first personal site.",
+          "  It doubles as an MCP server for AI agents and a desktop-style portfolio for humans.",
+          "  Start with: projects, writing, mcp, contact, or open projects.",
+        ].join("\n"),
+      };
+    }
+    if (target.startsWith("projects/")) {
+      return projectDetails(target.replace("projects/", "").replace(".md", ""));
+    }
+
+    return {
+      output: `  cat: ${target}: No such file or directory`,
+    };
+  },
 
   exit: () => ({
     output: `  <span style="color: var(--text-muted)">There is no escape. Type 'help' instead.</span>`,
@@ -365,6 +567,9 @@ export function runCommand(input: string): CommandResult {
       manifesto: "manifesto",
       projects: "projects",
       experience: "experience",
+      writing: "writing",
+      mcp: "mcp",
+      about: "bio",
     };
     if (cdMap[target]) {
       return commands[cdMap[target]]("");

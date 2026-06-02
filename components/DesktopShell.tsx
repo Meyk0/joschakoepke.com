@@ -1,0 +1,897 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Terminal from "@/components/Terminal";
+import {
+  bio,
+  contact,
+  featuredArticles,
+  authoredArticles,
+  mcpTools,
+  openToWork,
+  projects,
+  resume,
+  Project,
+} from "@/content/data";
+import { TerminalAppId } from "@/lib/commands";
+import { trackEvent } from "@/lib/analytics";
+
+type WindowState = {
+  id: TerminalAppId;
+  title: string;
+  open: boolean;
+  minimized: boolean;
+  maximized: boolean;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  minWidth: number;
+  minHeight: number;
+  z: number;
+};
+
+type Shortcut = {
+  id: string;
+  label: string;
+  type: "folder" | "file" | "app" | "url" | "trash" | "terminal";
+  appId?: TerminalAppId;
+  href?: string;
+  initials?: string;
+};
+
+const windowDefaults: Record<TerminalAppId, Omit<WindowState, "id" | "open" | "minimized" | "maximized" | "z">> = {
+  terminal: {
+    title: "Terminal",
+    x: 150,
+    y: 86,
+    width: 980,
+    height: 680,
+    minWidth: 560,
+    minHeight: 420,
+  },
+  projects: {
+    title: "Projects",
+    x: 100,
+    y: 74,
+    width: 860,
+    height: 640,
+    minWidth: 560,
+    minHeight: 430,
+  },
+  resume: {
+    title: "Resume.pdf",
+    x: 190,
+    y: 112,
+    width: 820,
+    height: 660,
+    minWidth: 560,
+    minHeight: 440,
+  },
+  writing: {
+    title: "Writing",
+    x: 230,
+    y: 96,
+    width: 780,
+    height: 560,
+    minWidth: 520,
+    minHeight: 380,
+  },
+  mcp: {
+    title: "MCP Server",
+    x: 260,
+    y: 132,
+    width: 760,
+    height: 560,
+    minWidth: 520,
+    minHeight: 380,
+  },
+  about: {
+    title: "About.txt",
+    x: 300,
+    y: 100,
+    width: 680,
+    height: 480,
+    minWidth: 440,
+    minHeight: 340,
+  },
+  coffee: {
+    title: "Coffee.txt",
+    x: 360,
+    y: 156,
+    width: 520,
+    height: 390,
+    minWidth: 360,
+    minHeight: 300,
+  },
+  roadmaps: {
+    title: "Old Roadmaps",
+    x: 380,
+    y: 136,
+    width: 560,
+    height: 420,
+    minWidth: 380,
+    minHeight: 310,
+  },
+};
+
+const shortcuts: Shortcut[] = [
+  { id: "terminal", label: "Terminal", type: "terminal", appId: "terminal", initials: ">_" },
+  { id: "projects", label: "Projects", type: "folder", appId: "projects", initials: "PR" },
+  { id: "resume", label: "Resume.pdf", type: "file", appId: "resume", initials: "CV" },
+  { id: "writing", label: "Writing", type: "folder", appId: "writing", initials: "WR" },
+  { id: "mcp", label: "MCP Server", type: "app", appId: "mcp", initials: "MCP" },
+  { id: "about", label: "About.txt", type: "file", appId: "about", initials: "AB" },
+  { id: "engramviz", label: "EngramViz.app", type: "app", href: "https://www.engramviz.com", initials: "EV" },
+  { id: "github", label: "GitHub.url", type: "url", href: contact.github, initials: "GH" },
+  { id: "linkedin", label: "LinkedIn.url", type: "url", href: contact.linkedin, initials: "IN" },
+  { id: "coffee", label: "Coffee.txt", type: "file", appId: "coffee", initials: "CF" },
+  { id: "roadmaps", label: "Old Roadmaps", type: "trash", appId: "roadmaps", initials: "OR" },
+];
+
+function createInitialWindows(): Record<TerminalAppId, WindowState> {
+  return Object.entries(windowDefaults).reduce((acc, [id, defaults], index) => {
+    const appId = id as TerminalAppId;
+    acc[appId] = {
+      id: appId,
+      ...defaults,
+      open: appId === "terminal",
+      minimized: false,
+      maximized: false,
+      z: 20 + index,
+    };
+    return acc;
+  }, {} as Record<TerminalAppId, WindowState>);
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function formatClock(date: Date, compact = false) {
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: compact ? undefined : "short",
+    month: compact ? undefined : "short",
+    day: compact ? undefined : "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function TrackedLink({
+  href,
+  children,
+  className = "",
+}: {
+  href: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={className}
+      onClick={() =>
+        trackEvent("outbound_link_click", { source: "desktop_window", href })
+      }
+    >
+      {children}
+    </a>
+  );
+}
+
+export default function DesktopShell() {
+  const [windows, setWindows] = useState(createInitialWindows);
+  const [clock, setClock] = useState("");
+  const [mobilePanel, setMobilePanel] = useState<TerminalAppId | null>(null);
+  const zRef = useRef(80);
+  const dragRef = useRef<{
+    id: TerminalAppId;
+    startX: number;
+    startY: number;
+    x: number;
+    y: number;
+  } | null>(null);
+  const resizeRef = useRef<{
+    id: TerminalAppId;
+    startX: number;
+    startY: number;
+    width: number;
+    height: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const update = () => setClock(formatClock(new Date()));
+    update();
+    const id = window.setInterval(update, 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    setWindows((prev) => {
+      const terminal = prev.terminal;
+      const width = clamp(
+        Math.min(980, Math.max(terminal.minWidth, window.innerWidth - 280)),
+        terminal.minWidth,
+        980
+      );
+      const height = clamp(
+        Math.min(680, Math.max(terminal.minHeight, window.innerHeight - 142)),
+        terminal.minHeight,
+        680
+      );
+      const x = clamp(
+        Math.max(230, Math.round((window.innerWidth - width) / 2)),
+        8,
+        window.innerWidth - width - 8
+      );
+      const y = clamp(76, 34, window.innerHeight - height - 84);
+
+      return {
+        ...prev,
+        terminal: {
+          ...terminal,
+          x,
+          y,
+          width,
+          height,
+        },
+      };
+    });
+  }, []);
+
+  const focusWindow = useCallback((id: TerminalAppId) => {
+    setWindows((prev) => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        z: ++zRef.current,
+      },
+    }));
+  }, []);
+
+  const openApp = useCallback(
+    (id: TerminalAppId, source = "app") => {
+      setWindows((prev) => ({
+        ...prev,
+        [id]: {
+          ...prev[id],
+          open: true,
+          minimized: false,
+          z: ++zRef.current,
+        },
+      }));
+      setMobilePanel(id === "terminal" ? null : id);
+      trackEvent("desktop_app_open", { app: id, source });
+    },
+    []
+  );
+
+  const closeWindow = (id: TerminalAppId) => {
+    setWindows((prev) => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        open: false,
+        minimized: false,
+        maximized: false,
+      },
+    }));
+    trackEvent("window_close", { app: id });
+  };
+
+  const minimizeWindow = (id: TerminalAppId) => {
+    setWindows((prev) => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        minimized: true,
+      },
+    }));
+    trackEvent("window_minimize", { app: id });
+  };
+
+  const toggleMaximize = (id: TerminalAppId) => {
+    setWindows((prev) => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        open: true,
+        minimized: false,
+        maximized: !prev[id].maximized,
+        z: ++zRef.current,
+      },
+    }));
+    trackEvent("window_maximize", { app: id });
+  };
+
+  const openShortcut = (shortcut: Shortcut, source = "icon") => {
+    trackEvent("desktop_icon_click", { icon: shortcut.id, type: shortcut.type });
+    if (shortcut.href) {
+      trackEvent("outbound_link_click", {
+        source: `desktop_${source}`,
+        href: shortcut.href,
+      });
+      window.open(shortcut.href, "_blank", "noopener,noreferrer");
+      return;
+    }
+    if (shortcut.appId) {
+      openApp(shortcut.appId, source);
+    }
+  };
+
+  const startDrag = (
+    id: TerminalAppId,
+    event: React.PointerEvent<HTMLDivElement>
+  ) => {
+    const state = windows[id];
+    if (state.maximized) return;
+    event.preventDefault();
+    dragRef.current = {
+      id,
+      startX: event.clientX,
+      startY: event.clientY,
+      x: state.x,
+      y: state.y,
+    };
+    focusWindow(id);
+  };
+
+  const startResize = (
+    id: TerminalAppId,
+    event: React.PointerEvent<HTMLDivElement>
+  ) => {
+    const state = windows[id];
+    if (state.maximized) return;
+    event.preventDefault();
+    event.stopPropagation();
+    resizeRef.current = {
+      id,
+      startX: event.clientX,
+      startY: event.clientY,
+      width: state.width,
+      height: state.height,
+    };
+    focusWindow(id);
+  };
+
+  useEffect(() => {
+    const handleMove = (event: PointerEvent) => {
+      if (dragRef.current) {
+        const drag = dragRef.current;
+        setWindows((prev) => {
+          const state = prev[drag.id];
+          const nextX = drag.x + event.clientX - drag.startX;
+          const nextY = drag.y + event.clientY - drag.startY;
+          return {
+            ...prev,
+            [drag.id]: {
+              ...state,
+              x: clamp(nextX, 8, window.innerWidth - state.width - 8),
+              y: clamp(nextY, 34, window.innerHeight - state.height - 84),
+            },
+          };
+        });
+      }
+
+      if (resizeRef.current) {
+        const resize = resizeRef.current;
+        setWindows((prev) => {
+          const state = prev[resize.id];
+          const width = resize.width + event.clientX - resize.startX;
+          const height = resize.height + event.clientY - resize.startY;
+          return {
+            ...prev,
+            [resize.id]: {
+              ...state,
+              width: clamp(width, state.minWidth, window.innerWidth - state.x - 12),
+              height: clamp(height, state.minHeight, window.innerHeight - state.y - 88),
+            },
+          };
+        });
+      }
+    };
+
+    const handleUp = () => {
+      dragRef.current = null;
+      resizeRef.current = null;
+    };
+
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+    return () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+    };
+  }, []);
+
+  const dockShortcuts = useMemo(
+    () =>
+      shortcuts.filter((shortcut) =>
+        ["terminal", "projects", "resume", "mcp", "github", "linkedin"].includes(
+          shortcut.id
+        )
+      ),
+    []
+  );
+
+  return (
+    <main className="desktop-shell">
+      <div className="wallpaper-layer" />
+      <div className="desktop-vignette" />
+
+      <section className="hidden md:block">
+        <MenuBar clock={clock} openApp={openApp} />
+
+        <div className="desktop-icons" aria-label="Desktop shortcuts">
+          {shortcuts.map((shortcut) => (
+            <DesktopIcon
+              key={shortcut.id}
+              shortcut={shortcut}
+              onOpen={() => openShortcut(shortcut)}
+            />
+          ))}
+        </div>
+
+        {Object.values(windows).map((state) => (
+          <DesktopWindow
+            key={state.id}
+            state={state}
+            onFocus={() => focusWindow(state.id)}
+            onClose={() => closeWindow(state.id)}
+            onMinimize={() => minimizeWindow(state.id)}
+            onMaximize={() => toggleMaximize(state.id)}
+            onDragStart={(event) => startDrag(state.id, event)}
+            onResizeStart={(event) => startResize(state.id, event)}
+          >
+            <WindowContent appId={state.id} openApp={openApp} />
+          </DesktopWindow>
+        ))}
+
+        <Dock
+          shortcuts={dockShortcuts}
+          windows={windows}
+          onOpen={(shortcut) => {
+            trackEvent("dock_click", { item: shortcut.id });
+            openShortcut(shortcut, "dock");
+          }}
+        />
+      </section>
+
+      <MobileShell
+        clock={clock}
+        mobilePanel={mobilePanel}
+        setMobilePanel={setMobilePanel}
+        openApp={openApp}
+      />
+    </main>
+  );
+}
+
+function MenuBar({
+  clock,
+  openApp,
+}: {
+  clock: string;
+  openApp: (id: TerminalAppId, source?: string) => void;
+}) {
+  const items: Array<{ label: string; appId: TerminalAppId }> = [
+    { label: "Projects", appId: "projects" },
+    { label: "Resume", appId: "resume" },
+    { label: "Writing", appId: "writing" },
+    { label: "MCP", appId: "mcp" },
+    { label: "Contact", appId: "about" },
+  ];
+
+  return (
+    <div className="menu-bar">
+      <div className="menu-left">
+        <button type="button" className="menu-brand" onClick={() => openApp("about", "menu")}>
+          JoschaOS
+        </button>
+        {items.map((item) => (
+          <button
+            type="button"
+            key={item.label}
+            className="menu-item"
+            onClick={() => openApp(item.appId, "menu")}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+      <div className="menu-right">
+        <span className="menu-pill">MCP live</span>
+        <span>{clock}</span>
+      </div>
+    </div>
+  );
+}
+
+function DesktopIcon({
+  shortcut,
+  onOpen,
+}: {
+  shortcut: Shortcut;
+  onOpen: () => void;
+}) {
+  return (
+    <button type="button" className="desktop-icon" onClick={onOpen}>
+      <span className={`desktop-icon-symbol ${shortcut.type}`}>
+        <span>{shortcut.initials}</span>
+      </span>
+      <span className="desktop-icon-label">{shortcut.label}</span>
+    </button>
+  );
+}
+
+function DesktopWindow({
+  state,
+  children,
+  onFocus,
+  onClose,
+  onMinimize,
+  onMaximize,
+  onDragStart,
+  onResizeStart,
+}: {
+  state: WindowState;
+  children: React.ReactNode;
+  onFocus: () => void;
+  onClose: () => void;
+  onMinimize: () => void;
+  onMaximize: () => void;
+  onDragStart: (event: React.PointerEvent<HTMLDivElement>) => void;
+  onResizeStart: (event: React.PointerEvent<HTMLDivElement>) => void;
+}) {
+  const hidden = !state.open || state.minimized;
+  const style = state.maximized
+    ? {
+        left: 16,
+        top: 38,
+        width: "calc(100vw - 32px)",
+        height: "calc(100vh - 124px)",
+        zIndex: state.z,
+        display: hidden ? "none" : "flex",
+      }
+    : {
+        left: state.x,
+        top: state.y,
+        width: state.width,
+        height: state.height,
+        zIndex: state.z,
+        display: hidden ? "none" : "flex",
+      };
+
+  return (
+    <section className="desktop-window" style={style} onPointerDown={onFocus}>
+      <div className="window-titlebar" onPointerDown={onDragStart}>
+        <div className="window-controls" onPointerDown={(event) => event.stopPropagation()}>
+          <button type="button" className="window-dot close" aria-label={`Close ${state.title}`} onClick={onClose} />
+          <button type="button" className="window-dot minimize" aria-label={`Minimize ${state.title}`} onClick={onMinimize} />
+          <button type="button" className="window-dot maximize" aria-label={`Maximize ${state.title}`} onClick={onMaximize} />
+        </div>
+        <div className="window-title">{state.title}</div>
+        <div className="window-title-spacer" />
+      </div>
+      <div className="window-body">{children}</div>
+      {!state.maximized && (
+        <div className="window-resize-handle" onPointerDown={onResizeStart} />
+      )}
+    </section>
+  );
+}
+
+function Dock({
+  shortcuts,
+  windows,
+  onOpen,
+}: {
+  shortcuts: Shortcut[];
+  windows: Record<TerminalAppId, WindowState>;
+  onOpen: (shortcut: Shortcut) => void;
+}) {
+  return (
+    <div className="desktop-dock">
+      {shortcuts.map((shortcut) => {
+        const running =
+          shortcut.appId && windows[shortcut.appId]?.open && !windows[shortcut.appId]?.minimized;
+        return (
+          <button
+            type="button"
+            key={shortcut.id}
+            className="dock-item"
+            onClick={() => onOpen(shortcut)}
+            aria-label={`Open ${shortcut.label}`}
+          >
+            <span className={`dock-symbol ${shortcut.type}`}>{shortcut.initials}</span>
+            {running && <span className="dock-running" />}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function WindowContent({
+  appId,
+  openApp,
+}: {
+  appId: TerminalAppId;
+  openApp: (id: TerminalAppId, source?: string) => void;
+}) {
+  if (appId === "terminal") {
+    return <Terminal embedded onOpenApp={(id) => openApp(id, "terminal")} />;
+  }
+  if (appId === "projects") return <ProjectsWindow />;
+  if (appId === "resume") return <ResumeWindow />;
+  if (appId === "writing") return <WritingWindow />;
+  if (appId === "mcp") return <McpWindow />;
+  if (appId === "about") return <AboutWindow />;
+  if (appId === "coffee") return <CoffeeWindow />;
+  return <RoadmapsWindow />;
+}
+
+function ProjectsWindow() {
+  const [selected, setSelected] = useState<Project>(projects[3] ?? projects[0]);
+
+  return (
+    <div className="app-window projects-window">
+      <aside className="project-list" aria-label="Projects">
+        {projects.map((project) => (
+          <button
+            type="button"
+            key={project.name}
+            className={`project-row ${project.name === selected.name ? "active" : ""}`}
+            onClick={() => setSelected(project)}
+          >
+            <span>{project.name}</span>
+            <small>{project.status}</small>
+          </button>
+        ))}
+      </aside>
+      <section className="project-detail">
+        <div className="window-kicker">{selected.type} project</div>
+        <h1>{selected.name}</h1>
+        <p>{selected.description}</p>
+        <div className="tag-row">
+          {selected.tech.map((item) => (
+            <span key={item}>{item}</span>
+          ))}
+        </div>
+        {selected.url && (
+          <TrackedLink href={selected.url} className="primary-link">
+            Open project
+          </TrackedLink>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function ResumeWindow() {
+  return (
+    <div className="app-window document-window">
+      <div className="document-header">
+        <div>
+          <div className="window-kicker">Resume</div>
+          <h1>{bio.name}</h1>
+        </div>
+        <p>{bio.role} · {bio.location}</p>
+      </div>
+      <p className="lead">{resume.summary}</p>
+      <section className="document-section">
+        <h2>Selected Impact</h2>
+        {resume.selectedImpact.map((impact) => (
+          <p key={impact} className="metric-line">{impact}</p>
+        ))}
+      </section>
+      <section className="document-section">
+        <h2>Experience</h2>
+        {resume.experience.map((entry) => (
+          <article key={`${entry.company}-${entry.dates}`} className="resume-entry">
+            <h3>{entry.role} · {entry.company}</h3>
+            <p className="muted">{entry.dates}{entry.context ? ` · ${entry.context}` : ""}</p>
+            <ul>
+              {entry.bullets.slice(0, 3).map((bullet) => (
+                <li key={bullet}>{bullet}</li>
+              ))}
+            </ul>
+          </article>
+        ))}
+      </section>
+    </div>
+  );
+}
+
+function WritingWindow() {
+  return (
+    <div className="app-window document-window">
+      <div className="window-kicker">Writing and Press</div>
+      <h1>Articles, interviews, and product thinking</h1>
+      <section className="document-section">
+        <h2>Featured</h2>
+        {featuredArticles.map((article) => (
+          <ArticleRow key={article.url} article={article} />
+        ))}
+      </section>
+      <section className="document-section">
+        <h2>Authored</h2>
+        {authoredArticles.map((article) => (
+          <ArticleRow key={article.url} article={article} />
+        ))}
+      </section>
+    </div>
+  );
+}
+
+function ArticleRow({
+  article,
+}: {
+  article: { title: string; url: string; publication: string; year: number };
+}) {
+  return (
+    <TrackedLink href={article.url} className="article-row">
+      <span>{article.title}</span>
+      <small>{article.publication} · {article.year}</small>
+    </TrackedLink>
+  );
+}
+
+function McpWindow() {
+  return (
+    <div className="app-window document-window">
+      <div className="window-kicker">Agent-readable profile</div>
+      <h1>MCP Server</h1>
+      <p className="lead">
+        This site exposes Joscha's background, projects, writing, and resume data through a public MCP endpoint.
+      </p>
+      <div className="code-pill">{contact.mcp_url}</div>
+      <section className="document-section">
+        <h2>Tools</h2>
+        <div className="tool-grid">
+          {mcpTools.map((tool) => (
+            <div className="tool-card" key={tool.name}>
+              <strong>{tool.name}</strong>
+              <span>{tool.parameters}</span>
+              <p>{tool.description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function AboutWindow() {
+  return (
+    <div className="app-window document-window">
+      <div className="window-kicker">About</div>
+      <h1>{bio.name}</h1>
+      <p className="lead">{bio.summary}</p>
+      <div className="tag-row">
+        {bio.tags.map((tag) => (
+          <span key={tag}>{tag}</span>
+        ))}
+      </div>
+      <section className="document-section">
+        <h2>Current Signal</h2>
+        <p>{openToWork.context}</p>
+        <p className="muted">{openToWork.ideal_role}</p>
+      </section>
+      <section className="document-section">
+        <h2>Contact</h2>
+        <p><TrackedLink href={`mailto:${contact.email}`}>{contact.email}</TrackedLink></p>
+        <p><TrackedLink href={contact.linkedin}>{contact.linkedin}</TrackedLink></p>
+        <p><TrackedLink href={contact.github}>{contact.github}</TrackedLink></p>
+      </section>
+    </div>
+  );
+}
+
+function CoffeeWindow() {
+  return (
+    <div className="app-window note-window">
+      <h1>Coffee.txt</h1>
+      <p>Current operating assumption: a good espresso machine is a product team productivity tool.</p>
+      <p>Preferred shot: 18g in, 36g out, 28 seconds.</p>
+      <p className="muted">Status: probably over-caffeinated, still shipping.</p>
+    </div>
+  );
+}
+
+function RoadmapsWindow() {
+  return (
+    <div className="app-window note-window">
+      <h1>Old Roadmaps</h1>
+      <p>Archived planning artifacts that looked very confident right before customers taught us something better.</p>
+      <ul>
+        <li>Feature lists without customer evidence</li>
+        <li>RICE scores pretending to be strategy</li>
+        <li>Quarterly plans immune to reality</li>
+      </ul>
+      <p className="muted">Recovered principle: action reveals truth.</p>
+    </div>
+  );
+}
+
+function MobileShell({
+  clock,
+  mobilePanel,
+  setMobilePanel,
+  openApp,
+}: {
+  clock: string;
+  mobilePanel: TerminalAppId | null;
+  setMobilePanel: (id: TerminalAppId | null) => void;
+  openApp: (id: TerminalAppId, source?: string) => void;
+}) {
+  const mobileShortcuts = shortcuts.filter((shortcut) =>
+    ["terminal", "projects", "resume", "writing", "mcp", "about", "engramviz"].includes(
+      shortcut.id
+    )
+  );
+
+  return (
+    <section className="mobile-shell md:hidden">
+      <div className="mobile-menu-bar">
+        <span>JoschaOS</span>
+        <span>{clock || formatClock(new Date(), true)}</span>
+      </div>
+      <div className="mobile-terminal-frame">
+        <Terminal
+          embedded
+          onOpenApp={(id) => {
+            if (id === "terminal") {
+              setMobilePanel(null);
+            } else {
+              setMobilePanel(id);
+            }
+          }}
+        />
+      </div>
+      {mobilePanel && mobilePanel !== "terminal" && (
+        <div className="mobile-panel">
+          <div className="mobile-panel-bar">
+            <span>{windowDefaults[mobilePanel].title}</span>
+            <button type="button" onClick={() => setMobilePanel(null)}>
+              Close
+            </button>
+          </div>
+          <div className="mobile-panel-body">
+            <WindowContent appId={mobilePanel} openApp={openApp} />
+          </div>
+        </div>
+      )}
+      <div className="mobile-dock" aria-label="Mobile app drawer">
+        {mobileShortcuts.map((shortcut) => (
+          <button
+            type="button"
+            key={shortcut.id}
+            className="mobile-dock-item"
+            onClick={() => {
+              trackEvent("dock_click", { item: shortcut.id, layout: "mobile" });
+              if (shortcut.href) {
+                trackEvent("outbound_link_click", {
+                  source: "mobile_dock",
+                  href: shortcut.href,
+                });
+                window.open(shortcut.href, "_blank", "noopener,noreferrer");
+                return;
+              }
+              if (shortcut.appId === "terminal") {
+                setMobilePanel(null);
+              } else if (shortcut.appId) {
+                setMobilePanel(shortcut.appId);
+              }
+            }}
+          >
+            <span className={`dock-symbol ${shortcut.type}`}>{shortcut.initials}</span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}

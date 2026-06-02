@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { runCommand, commandNames, CommandResult } from "@/lib/commands";
+import {
+  runCommand,
+  commandNames,
+  CommandResult,
+  TerminalAppId,
+} from "@/lib/commands";
+import { trackEvent } from "@/lib/analytics";
 import CommandOutput from "./CommandOutput";
 import StatusBar from "./StatusBar";
 
@@ -10,10 +16,22 @@ interface HistoryEntry {
   result: CommandResult;
 }
 
+interface TerminalProps {
+  embedded?: boolean;
+  className?: string;
+  onOpenApp?: (appId: TerminalAppId) => void;
+  onCommand?: (command: string) => void;
+}
+
 const WELCOME_LINE =
   "Welcome. I'm Joscha Koepke - I love espresso and Golden Retrievers.";
 
-export default function Terminal() {
+export default function Terminal({
+  embedded = false,
+  className = "",
+  onOpenApp,
+  onCommand,
+}: TerminalProps) {
   const [input, setInput] = useState("");
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
@@ -28,7 +46,6 @@ export default function Terminal() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
 
-  // ── Typing animation ────────────────────────────────────────────────────
   useEffect(() => {
     let i = 0;
     const id = setInterval(() => {
@@ -43,13 +60,13 @@ export default function Terminal() {
     return () => clearInterval(id);
   }, []);
 
-  // ── Sound helper ────────────────────────────────────────────────────────
   const playBeep = useCallback(
     (freq: number, duration: number) => {
       if (!soundEnabled) return;
       try {
-        if (!audioCtxRef.current)
+        if (!audioCtxRef.current) {
           audioCtxRef.current = new AudioContext();
+        }
         const ctx = audioCtxRef.current;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -60,7 +77,7 @@ export default function Terminal() {
         osc.start();
         osc.stop(ctx.currentTime + duration / 1000);
       } catch {
-        // ignore audio errors
+        // Ignore browser audio restrictions.
       }
     },
     [soundEnabled]
@@ -80,7 +97,6 @@ export default function Terminal() {
     inputRef.current?.focus();
   }, []);
 
-  // ── Theme application ───────────────────────────────────────────────────
   useEffect(() => {
     const root = document.documentElement;
     if (theme === "light") {
@@ -115,7 +131,6 @@ export default function Terminal() {
       root.style.setProperty("--status-bar", "#00ff00");
       root.style.setProperty("--status-text", "#000a00");
     } else {
-      // Reset to dark defaults
       root.style.setProperty("--bg", "#060a06");
       root.style.setProperty("--surface", "#080d08");
       root.style.setProperty("--surface-2", "#0a120a");
@@ -134,95 +149,59 @@ export default function Terminal() {
     }
   }, [theme]);
 
-  // ── Command execution ───────────────────────────────────────────────────
+  const addHistory = (command: string, result: CommandResult) => {
+    if (result.output === "__CLEAR__") {
+      setHistory([]);
+      return;
+    }
+    setHistory((prev) => [...prev, { command, result }]);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = input.trim();
     if (!trimmed) return;
 
-    // Handle special commands in Terminal context
+    trackEvent("terminal_command", { command: trimmed.toLowerCase() });
+    onCommand?.(trimmed);
+
     if (trimmed.toLowerCase() === "history") {
       const lines = commandHistory
         .slice()
         .reverse()
         .map((c, i) => `  ${String(i + 1).padStart(4)}  ${c}`);
-      setHistory((prev) => [
-        ...prev,
-        {
-          command: trimmed,
-          result: {
-            output: lines.length
-              ? lines.join("\n")
-              : "  No commands in history.",
-          },
-        },
-      ]);
+      addHistory(trimmed, {
+        output: lines.length ? lines.join("\n") : "  No commands in history.",
+      });
     } else if (trimmed.toLowerCase().startsWith("theme ")) {
       const t = trimmed.toLowerCase().split(" ")[1];
       if (t === "dark" || t === "light" || t === "matrix") {
         setTheme(t);
-        setHistory((prev) => [
-          ...prev,
-          {
-            command: trimmed,
-            result: { output: `  Theme switched to ${t}.` },
-          },
-        ]);
+        addHistory(trimmed, { output: `  Theme switched to ${t}.` });
       } else {
-        setHistory((prev) => [
-          ...prev,
-          {
-            command: trimmed,
-            result: {
-              output: `  Unknown theme: ${t}. Available: dark, light, matrix`,
-            },
-          },
-        ]);
+        addHistory(trimmed, {
+          output: `  Unknown theme: ${t}. Available: dark, light, matrix`,
+        });
       }
     } else if (trimmed.toLowerCase() === "theme") {
-      setHistory((prev) => [
-        ...prev,
-        {
-          command: trimmed,
-          result: {
-            output: `  Current theme: ${theme}\n  Available: dark, light, matrix\n  Usage: theme [name]`,
-          },
-        },
-      ]);
+      addHistory(trimmed, {
+        output: `  Current theme: ${theme}\n  Available: dark, light, matrix\n  Usage: theme [name]`,
+      });
     } else if (trimmed.toLowerCase() === "sound on") {
       setSoundEnabled(true);
-      setHistory((prev) => [
-        ...prev,
-        {
-          command: trimmed,
-          result: { output: "  Sound effects enabled. 🔊" },
-        },
-      ]);
+      addHistory(trimmed, { output: "  Sound effects enabled." });
     } else if (trimmed.toLowerCase() === "sound off") {
       setSoundEnabled(false);
-      setHistory((prev) => [
-        ...prev,
-        {
-          command: trimmed,
-          result: { output: "  Sound effects disabled. 🔇" },
-        },
-      ]);
+      addHistory(trimmed, { output: "  Sound effects disabled." });
     } else if (trimmed.toLowerCase() === "sound") {
-      setHistory((prev) => [
-        ...prev,
-        {
-          command: trimmed,
-          result: {
-            output: `  Sound: ${soundEnabled ? "on" : "off"}\n  Usage: sound on | sound off`,
-          },
-        },
-      ]);
+      addHistory(trimmed, {
+        output: `  Sound: ${soundEnabled ? "on" : "off"}\n  Usage: sound on | sound off`,
+      });
     } else {
       const result = runCommand(trimmed);
-      if (result.output === "__CLEAR__") {
-        setHistory([]);
-      } else {
-        setHistory((prev) => [...prev, { command: trimmed, result }]);
+      addHistory(trimmed, result);
+      if (result.action?.type === "open_app") {
+        onOpenApp?.(result.action.appId);
       }
     }
 
@@ -234,7 +213,6 @@ export default function Terminal() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Autocomplete navigation
     if (autocomplete.length > 0) {
       if (e.key === "ArrowDown") {
         e.preventDefault();
@@ -286,12 +264,7 @@ export default function Terminal() {
       const trimmed = input.trim().toLowerCase();
       if (!trimmed) return;
 
-      const allCommands = [
-        ...commandNames,
-        "history",
-        "theme",
-        "sound",
-      ];
+      const allCommands = [...commandNames, "history", "theme", "sound"];
       const matches = allCommands.filter((c) => c.startsWith(trimmed));
       if (matches.length === 1) {
         setInput(matches[0]);
@@ -301,7 +274,6 @@ export default function Terminal() {
         setAutocomplete(matches);
         setAcIndex(0);
       } else {
-        // No match — bell
         playBeep(440, 80);
       }
     } else {
@@ -309,7 +281,6 @@ export default function Terminal() {
         setAutocomplete([]);
         setAcIndex(-1);
       }
-      // Subtle keypress sound
       if (soundEnabled && e.key.length === 1) {
         playBeep(800 + Math.random() * 200, 15);
       }
@@ -326,6 +297,165 @@ export default function Terminal() {
     year: "numeric",
   });
 
+  const content = (
+    <div
+      className={`flex h-full min-h-0 flex-col overflow-hidden ${className}`}
+      style={{
+        background: "var(--surface)",
+        fontFamily: '"JetBrains Mono", monospace',
+      }}
+    >
+      <div
+        ref={scrollRef}
+        className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden px-4 py-4 sm:px-6 sm:py-5 cursor-text"
+        onClick={focusInput}
+      >
+        <div className="mb-4 text-xs sm:text-sm leading-none hidden md:block font-mono whitespace-pre">
+          <div style={{ color: "#ff5f56" }}>{`       __                __             __ __                 __`}</div>
+          <div style={{ color: "#ff9f43" }}>{`      / /___  __________/ /_  ____ _   / //_/___  ___  ____  / /__ ___`}</div>
+          <div style={{ color: "#ffda6b" }}>{` __  / / __ \\/ ___/ ___/ __ \\/ __ \`/  / ,< / __ \\/ _ \\/ __ \\/ //_/ _ \\`}</div>
+          <div style={{ color: "#00ff88" }}>{`/ /_/ / /_/ (__  ) /__/ / / / /_/ /  / /| / /_/ /  __/ /_/ / ,< /  __/`}</div>
+          <div style={{ color: "#5fd7ff" }}>{`\\____/\\____/____/\\___/_/ /_/\\__,_/  /_/ |_\\____/\\___/ .___/_/|_|\\___/`}</div>
+          <div style={{ color: "#c084fc" }}>{`                                                   /_/`}</div>
+        </div>
+
+        <div className="mb-4 text-xs leading-none hidden sm:block md:hidden font-mono whitespace-pre">
+          <div style={{ color: "#ff5f56" }}>{`    __ __`}</div>
+          <div style={{ color: "#ff9f43" }}>{`   / / /<`}</div>
+          <div style={{ color: "#ffda6b" }}>{`  / / ,<    Joscha Koepke`}</div>
+          <div style={{ color: "#00ff88" }}>{` / / /|`}</div>
+          <div style={{ color: "#5fd7ff" }}>{`/_/_/ |_\\   Head of Product`}</div>
+        </div>
+
+        <div className="mb-3 text-[10px] leading-none sm:hidden font-mono whitespace-pre">
+          <div style={{ color: "#ff5f56" }}>{`     _ _  __`}</div>
+          <div style={{ color: "#ff9f43" }}>{`    | | |/ /`}</div>
+          <div style={{ color: "#ffda6b" }}>{` _  | | ' / `}</div>
+          <div style={{ color: "#00ff88" }}>{`| |_| | . \\ `}</div>
+          <div style={{ color: "#5fd7ff" }}>{` \\___/|_|\\_\\`}</div>
+        </div>
+        <div
+          className="mb-1 text-sm font-bold sm:hidden"
+          style={{ color: "var(--green)" }}
+        >
+          Joscha Koepke
+        </div>
+        <div
+          className="mb-4 text-xs sm:hidden"
+          style={{ color: "var(--text-dim)" }}
+        >
+          Head of Product
+        </div>
+
+        <div className="mb-4 text-xs" style={{ color: "var(--text-faint)" }}>
+          joscha-koepke.local ↑ bash · {bootDate}
+        </div>
+
+        <div className="mb-2" style={{ color: "var(--text)" }}>
+          {typedWelcome}
+          {!bootDone && (
+            <span
+              className="inline-block w-[0.6em] h-[1em] ml-0.5 animate-blink"
+              style={{
+                background: "var(--green)",
+                verticalAlign: "text-bottom",
+              }}
+            />
+          )}
+        </div>
+        {bootDone && (
+          <div className="mb-6" style={{ color: "var(--text-muted)" }}>
+            Type <span style={{ color: "var(--green)" }}>help</span> to see
+            available commands.
+          </div>
+        )}
+
+        {history.map((entry, i) => (
+          <CommandOutput
+            key={`${entry.command}-${i}`}
+            command={entry.command}
+            result={entry.result}
+            index={i}
+          />
+        ))}
+
+        <div className="flex items-center min-w-0">
+          <span
+            className="shrink-0"
+            style={{ color: "var(--green)", fontWeight: 600 }}
+          >
+            joscha-koepke@mcp:~$
+          </span>
+          <form onSubmit={handleSubmit} className="flex-1 relative ml-2 min-w-0">
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="w-full bg-transparent outline-none caret-transparent"
+              style={{
+                color: "var(--text)",
+                fontFamily: "inherit",
+                fontSize: "inherit",
+              }}
+              aria-label="Terminal command input"
+              spellCheck={false}
+              autoCapitalize="off"
+              autoComplete="off"
+              autoCorrect="off"
+            />
+            <span
+              className="absolute top-0 pointer-events-none"
+              style={{ left: `${input.length}ch` }}
+            >
+              <span
+                className="inline-block w-[0.6em] h-[1.2em] animate-blink"
+                style={{ background: "var(--green)" }}
+              />
+            </span>
+          </form>
+        </div>
+
+        {autocomplete.length > 0 && (
+          <div
+            className="mt-1 border rounded text-xs overflow-hidden"
+            style={{
+              background: "var(--surface-2)",
+              borderColor: "var(--border)",
+            }}
+          >
+            {autocomplete.map((cmd, i) => (
+              <div
+                key={cmd}
+                className="px-3 py-1 cursor-pointer"
+                style={{
+                  background:
+                    i === acIndex ? "var(--green-muted)" : "transparent",
+                  color: i === acIndex ? "var(--green)" : "var(--green-dim)",
+                  fontWeight: i === acIndex ? 600 : 400,
+                }}
+                onClick={() => {
+                  setInput(cmd);
+                  setAutocomplete([]);
+                  setAcIndex(-1);
+                  inputRef.current?.focus();
+                }}
+              >
+                {cmd}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <StatusBar theme={theme} />
+    </div>
+  );
+
+  if (embedded) {
+    return content;
+  }
+
   return (
     <div
       className="min-h-screen w-full px-5 py-6 sm:p-8 animate-page-load overflow-x-hidden flex items-center justify-center"
@@ -341,28 +471,14 @@ export default function Terminal() {
           maxWidth: "min(64rem, calc(100vw - 2.5rem))",
         }}
       >
-        {/* Title bar */}
         <div
           className="flex items-center justify-between px-4 py-3 border-b"
-          style={{
-            borderColor: "var(--border-dim)",
-          }}
+          style={{ borderColor: "var(--border-dim)" }}
         >
-          <div className="flex items-center gap-2">
-            <div className="flex gap-2">
-              <span
-                className="w-3 h-3 rounded-full"
-                style={{ background: "var(--red)" }}
-              />
-              <span
-                className="w-3 h-3 rounded-full"
-                style={{ background: "var(--amber)" }}
-              />
-              <span
-                className="w-3 h-3 rounded-full"
-                style={{ background: "var(--green)" }}
-              />
-            </div>
+          <div className="flex gap-2">
+            <span className="w-3 h-3 rounded-full" style={{ background: "var(--red)" }} />
+            <span className="w-3 h-3 rounded-full" style={{ background: "var(--amber)" }} />
+            <span className="w-3 h-3 rounded-full" style={{ background: "var(--green)" }} />
           </div>
           <span className="text-xs" style={{ color: "var(--text-dim)" }}>
             joscha-koepke — terminal
@@ -381,152 +497,7 @@ export default function Terminal() {
             MCP live
           </div>
         </div>
-
-        {/* Terminal body */}
-        <div
-          ref={scrollRef}
-          className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden px-4 py-4 sm:px-6 sm:py-5 cursor-text"
-          onClick={focusInput}
-        >
-          {/* ASCII banner — rainbow (desktop) */}
-          <div className="mb-4 text-xs sm:text-sm leading-none hidden md:block font-mono whitespace-pre">
-            <div style={{ color: "#ff5f56" }}>{`       __                __             __ __                 __`}</div>
-            <div style={{ color: "#ff9f43" }}>{`      / /___  __________/ /_  ____ _   / //_/___  ___  ____  / /__ ___`}</div>
-            <div style={{ color: "#ffda6b" }}>{` __  / / __ \\/ ___/ ___/ __ \\/ __ \`/  / ,< / __ \\/ _ \\/ __ \\/ //_/ _ \\`}</div>
-            <div style={{ color: "#00ff88" }}>{`/ /_/ / /_/ (__  ) /__/ / / / /_/ /  / /| / /_/ /  __/ /_/ / ,< /  __/`}</div>
-            <div style={{ color: "#5fd7ff" }}>{`\\____/\\____/____/\\___/_/ /_/\\__,_/  /_/ |_\\____/\\___/ .___/_/|_|\\___/`}</div>
-            <div style={{ color: "#c084fc" }}>{`                                                   /_/`}</div>
-          </div>
-          {/* Tablet: compact ASCII */}
-          <div className="mb-4 text-xs leading-none hidden sm:block md:hidden font-mono whitespace-pre">
-            <div style={{ color: "#ff5f56" }}>{`    __ __`}</div>
-            <div style={{ color: "#ff9f43" }}>{`   / / /<`}</div>
-            <div style={{ color: "#ffda6b" }}>{`  / / ,<    Joscha Koepke`}</div>
-            <div style={{ color: "#00ff88" }}>{` / / /|`}</div>
-            <div style={{ color: "#5fd7ff" }}>{`/_/_/ |_\\   Head of Product`}</div>
-          </div>
-          {/* Mobile: figlet-style JK */}
-          <div className="mb-3 text-[10px] leading-none sm:hidden font-mono whitespace-pre">
-            <div style={{ color: "#ff5f56" }}>{`     _ _  __`}</div>
-            <div style={{ color: "#ff9f43" }}>{`    | | |/ /`}</div>
-            <div style={{ color: "#ffda6b" }}>{` _  | | ' / `}</div>
-            <div style={{ color: "#00ff88" }}>{`| |_| | . \\ `}</div>
-            <div style={{ color: "#5fd7ff" }}>{` \\___/|_|\\_\\`}</div>
-          </div>
-          <div className="mb-1 text-sm font-bold sm:hidden" style={{ color: "var(--green)" }}>
-            Joscha Koepke
-          </div>
-          <div className="mb-4 text-xs sm:hidden" style={{ color: "var(--text-dim)" }}>
-            Head of Product
-          </div>
-
-          {/* Boot line */}
-          <div
-            className="mb-4 text-xs"
-            style={{ color: "var(--text-faint)" }}
-          >
-            joscha-koepke.local ↑ bash · {bootDate}
-          </div>
-
-          {/* Welcome — typing animation */}
-          <div className="mb-2" style={{ color: "var(--text)" }}>
-            {typedWelcome}
-            {!bootDone && (
-              <span
-                className="inline-block w-[0.6em] h-[1em] ml-0.5 animate-blink"
-                style={{ background: "var(--green)", verticalAlign: "text-bottom" }}
-              />
-            )}
-          </div>
-          {bootDone && (
-            <div className="mb-6" style={{ color: "var(--text-muted)" }}>
-              Type <span style={{ color: "var(--green)" }}>help</span> to see
-              available commands.
-            </div>
-          )}
-
-          {/* Command history */}
-          {history.map((entry, i) => (
-            <CommandOutput
-              key={i}
-              command={entry.command}
-              result={entry.result}
-              index={i}
-            />
-          ))}
-
-          {/* Current input line */}
-          <div className="flex items-center">
-            <span style={{ color: "var(--green)", fontWeight: 600 }}>
-              joscha-koepke@mcp:~$
-            </span>
-            <form onSubmit={handleSubmit} className="flex-1 relative ml-2">
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="w-full bg-transparent outline-none caret-transparent"
-                style={{
-                  color: "var(--text)",
-                  fontFamily: "inherit",
-                  fontSize: "inherit",
-                }}
-                spellCheck={false}
-                autoCapitalize="off"
-                autoComplete="off"
-                autoCorrect="off"
-              />
-              {/* Fake cursor */}
-              <span
-                className="absolute top-0 pointer-events-none"
-                style={{ left: `${input.length}ch` }}
-              >
-                <span
-                  className="inline-block w-[0.6em] h-[1.2em] animate-blink"
-                  style={{ background: "var(--green)" }}
-                />
-              </span>
-            </form>
-          </div>
-
-          {/* Autocomplete dropdown — styled */}
-          {autocomplete.length > 0 && (
-            <div
-              className="mt-1 border rounded text-xs overflow-hidden"
-              style={{
-                background: "var(--surface-2)",
-                borderColor: "var(--border)",
-              }}
-            >
-              {autocomplete.map((cmd, i) => (
-                <div
-                  key={cmd}
-                  className="px-3 py-1 cursor-pointer"
-                  style={{
-                    background:
-                      i === acIndex ? "var(--green-muted)" : "transparent",
-                    color:
-                      i === acIndex ? "var(--green)" : "var(--green-dim)",
-                    fontWeight: i === acIndex ? 600 : 400,
-                  }}
-                  onClick={() => {
-                    setInput(cmd);
-                    setAutocomplete([]);
-                    setAcIndex(-1);
-                    inputRef.current?.focus();
-                  }}
-                >
-                  {cmd}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Status bar */}
-        <StatusBar theme={theme} />
+        {content}
       </div>
     </div>
   );
