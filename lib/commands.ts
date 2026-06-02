@@ -18,8 +18,7 @@ export type TerminalAppId =
   | "writing"
   | "mcp"
   | "about"
-  | "coffee"
-  | "roadmaps";
+  | "coffee";
 
 export interface CommandResult {
   output: string;
@@ -55,9 +54,6 @@ function appFromAlias(value: string): TerminalAppId | null {
     about: "about",
     bio: "about",
     coffee: "coffee",
-    roadmap: "roadmaps",
-    roadmaps: "roadmaps",
-    trash: "roadmaps",
   };
 
   return aliases[normalize(value)] ?? null;

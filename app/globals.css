@@ -168,7 +168,6 @@ button {
   min-width: 0;
 }
 
-.menu-brand,
 .menu-item {
   border: 0;
   background: transparent;
@@ -177,16 +176,11 @@ button {
   white-space: nowrap;
 }
 
-.menu-brand {
-  font-weight: 700;
-}
-
 .menu-item {
   color: rgba(255, 255, 255, 0.86);
 }
 
-.menu-item:hover,
-.menu-brand:hover {
+.menu-item:hover {
   color: white;
 }
 
@@ -301,11 +295,6 @@ button {
   color: #15345d;
 }
 
-.desktop-icon-symbol.trash {
-  background: linear-gradient(145deg, #eff2f6, #b9c2cf);
-  color: #334155;
-}
-
 .desktop-icon-label {
   display: block;
   max-width: 78px;
@@ -354,11 +343,18 @@ button {
 }
 
 .window-dot {
+  position: relative;
+  display: grid;
+  place-items: center;
   width: 12px;
   height: 12px;
   border: 0;
   border-radius: 50%;
   cursor: pointer;
+  color: rgba(30, 41, 59, 0.72);
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .window-dot.close {
@@ -371,6 +367,34 @@ button {
 
 .window-dot.maximize {
   background: #28c840;
+}
+
+.window-dot::before {
+  opacity: 0;
+  transform: translateY(-0.5px);
+}
+
+.window-dot.close::before {
+  content: "x";
+}
+
+.window-dot.minimize::before {
+  content: "-";
+  transform: translateY(-1px);
+}
+
+.window-dot.maximize::before {
+  content: "+";
+  transform: translateY(-0.5px);
+}
+
+.window-controls:hover .window-dot::before,
+.window-dot:focus-visible::before {
+  opacity: 1;
+}
+
+.window-dot:active {
+  filter: brightness(0.92);
 }
 
 .window-title {
@@ -730,23 +754,6 @@ button {
   text-transform: uppercase;
 }
 
-.tag-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 18px 0;
-}
-
-.tag-row span {
-  border: 1px solid rgba(37, 99, 235, 0.2);
-  border-radius: 999px;
-  background: rgba(37, 99, 235, 0.08);
-  color: #1e40af;
-  padding: 5px 9px;
-  font-size: 12px;
-  font-weight: 700;
-}
-
 .primary-link {
   display: inline-flex;
   margin-top: 10px;
@@ -893,7 +900,7 @@ button {
   display: flex;
   height: 28px;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   border-radius: 999px;
   background: rgba(15, 23, 42, 0.38);
   padding: 0 12px;

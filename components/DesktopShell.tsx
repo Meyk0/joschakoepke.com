@@ -44,7 +44,7 @@ type ResizeDirection =
 type Shortcut = {
   id: string;
   label: string;
-  type: "folder" | "file" | "app" | "url" | "trash" | "terminal";
+  type: "folder" | "file" | "app" | "url" | "terminal";
   appId?: TerminalAppId;
   href?: string;
   initials?: string;
@@ -114,15 +114,6 @@ const windowDefaults: Record<TerminalAppId, Omit<WindowState, "id" | "open" | "m
     minWidth: 360,
     minHeight: 300,
   },
-  roadmaps: {
-    title: "Old Roadmaps",
-    x: 380,
-    y: 136,
-    width: 560,
-    height: 420,
-    minWidth: 380,
-    minHeight: 310,
-  },
 };
 
 const shortcuts: Shortcut[] = [
@@ -136,7 +127,6 @@ const shortcuts: Shortcut[] = [
   { id: "github", label: "GitHub.url", type: "url", href: contact.github, initials: "GH" },
   { id: "linkedin", label: "LinkedIn.url", type: "url", href: contact.linkedin, initials: "IN" },
   { id: "coffee", label: "Coffee.txt", type: "file", appId: "coffee", initials: "CF" },
-  { id: "roadmaps", label: "Old Roadmaps", type: "trash", appId: "roadmaps", initials: "OR" },
 ];
 
 function createInitialWindows(): Record<TerminalAppId, WindowState> {
@@ -596,9 +586,6 @@ function MenuBar({
   return (
     <div className="menu-bar">
       <div className="menu-left">
-        <button type="button" className="menu-brand" onClick={() => openApp("about", "menu")}>
-          JoschaOS
-        </button>
         {items.map((item) => (
           <button
             type="button"
@@ -927,7 +914,7 @@ function WindowContent({
   if (appId === "mcp") return <McpWindow />;
   if (appId === "about") return <AboutWindow />;
   if (appId === "coffee") return <CoffeeWindow />;
-  return <RoadmapsWindow />;
+  return null;
 }
 
 function ProjectsWindow() {
@@ -952,11 +939,6 @@ function ProjectsWindow() {
         <div className="window-kicker">{selected.type} project</div>
         <h1>{selected.name}</h1>
         <p>{selected.description}</p>
-        <div className="tag-row">
-          {selected.tech.map((item) => (
-            <span key={item}>{item}</span>
-          ))}
-        </div>
         {selected.url && (
           <TrackedLink href={selected.url} className="primary-link">
             Open project
@@ -1067,11 +1049,6 @@ function AboutWindow() {
       <div className="window-kicker">About</div>
       <h1>{bio.name}</h1>
       <p className="lead">{bio.summary}</p>
-      <div className="tag-row">
-        {bio.tags.map((tag) => (
-          <span key={tag}>{tag}</span>
-        ))}
-      </div>
       <section className="document-section">
         <h2>Current Signal</h2>
         <p>{openToWork.context}</p>
@@ -1098,21 +1075,6 @@ function CoffeeWindow() {
   );
 }
 
-function RoadmapsWindow() {
-  return (
-    <div className="app-window note-window">
-      <h1>Old Roadmaps</h1>
-      <p>Archived planning artifacts that looked very confident right before customers taught us something better.</p>
-      <ul>
-        <li>Feature lists without customer evidence</li>
-        <li>RICE scores pretending to be strategy</li>
-        <li>Quarterly plans immune to reality</li>
-      </ul>
-      <p className="muted">Recovered principle: action reveals truth.</p>
-    </div>
-  );
-}
-
 function MobileShell({
   clock,
   mobilePanel,
@@ -1133,7 +1095,6 @@ function MobileShell({
   return (
     <section className="mobile-shell md:hidden">
       <div className="mobile-menu-bar">
-        <span>JoschaOS</span>
         <span>{clock}</span>
       </div>
       <div className="mobile-terminal-frame">
