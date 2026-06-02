@@ -17,7 +17,7 @@ export default function CommandOutput({
   return (
     <div
       className="animate-fade-in"
-      style={{ animationDelay: `${index * 0.02}s` }}
+      style={{ animationDelay: `${index * 0.02}s`, color: "var(--text)" }}
       onClick={(event) => {
         const target = event.target as HTMLElement;
         const anchor = target.closest("a");
@@ -33,10 +33,10 @@ export default function CommandOutput({
         <span style={{ color: "var(--green)", fontWeight: 600 }}>
           joscha-koepke@mcp:~$
         </span>
-        <span>{command}</span>
+        <span style={{ color: "var(--text)" }}>{command}</span>
       </div>
       {result.output && (
-        <div className="mt-1 mb-3 whitespace-pre-wrap">
+        <div className="mt-1 mb-3 whitespace-pre-wrap" style={{ color: "var(--text)" }}>
           {result.isHtml ? (
             <div dangerouslySetInnerHTML={{ __html: result.output }} />
           ) : (

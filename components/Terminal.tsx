@@ -137,12 +137,12 @@ export default function Terminal({
       root.style.setProperty("--border", "#1a2a1a");
       root.style.setProperty("--border-dim", "#0d1a0d");
       root.style.setProperty("--green", "#00ff88");
-      root.style.setProperty("--green-dim", "#4a8a4a");
+      root.style.setProperty("--green-dim", "#65b86a");
       root.style.setProperty("--green-muted", "#2a4a2a");
       root.style.setProperty("--text", "#c8d8c8");
       root.style.setProperty("--text-dim", "#8a9e8a");
-      root.style.setProperty("--text-muted", "#5a6a5a");
-      root.style.setProperty("--text-faint", "#3a4a3a");
+      root.style.setProperty("--text-muted", "#7f947f");
+      root.style.setProperty("--text-faint", "#627062");
       root.style.setProperty("--amber", "#ffb347");
       root.style.setProperty("--status-bar", "#00ff88");
       root.style.setProperty("--status-text", "#003a1a");
@@ -307,7 +307,7 @@ export default function Terminal({
     >
       <div
         ref={scrollRef}
-        className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden px-4 py-4 sm:px-6 sm:py-5 cursor-text"
+        className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden py-5 pl-6 pr-4 sm:pl-8 sm:pr-6 cursor-text"
         onClick={focusInput}
       >
         <div className="mb-4 text-xs sm:text-sm leading-none hidden md:block font-mono whitespace-pre">
