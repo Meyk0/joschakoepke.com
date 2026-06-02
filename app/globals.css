@@ -442,6 +442,22 @@ button {
   overflow: hidden;
 }
 
+.terminal-scroll {
+  padding: 30px 34px 28px;
+}
+
+@media (min-width: 640px) {
+  .terminal-scroll {
+    padding: 34px 44px 32px;
+  }
+}
+
+@media (min-width: 768px) {
+  .terminal-scroll {
+    padding: 38px 56px 36px;
+  }
+}
+
 .window-resize-corner {
   position: absolute;
   z-index: 3;
