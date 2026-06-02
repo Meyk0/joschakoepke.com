@@ -307,7 +307,7 @@ export default function Terminal({
     >
       <div
         ref={scrollRef}
-        className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden py-5 pl-6 pr-4 sm:pl-8 sm:pr-6 cursor-text"
+        className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden px-7 py-6 sm:px-9 md:px-10 cursor-text"
         onClick={focusInput}
       >
         <div className="mb-4 text-xs sm:text-sm leading-none hidden md:block font-mono whitespace-pre">

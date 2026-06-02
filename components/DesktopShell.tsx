@@ -1094,9 +1094,7 @@ function MobileShell({
 
   return (
     <section className="mobile-shell md:hidden">
-      <div className="mobile-menu-bar">
-        <span>{clock}</span>
-      </div>
+      <div className="mobile-time-chip">{clock}</div>
       <div className="mobile-terminal-frame">
         <Terminal
           embedded
