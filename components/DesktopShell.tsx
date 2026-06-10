@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Terminal from "@/components/Terminal";
+import SurfGame from "@/components/SurfGame";
 import {
   bio,
   contact,
@@ -119,6 +120,15 @@ const windowDefaults: Record<TerminalAppId, Omit<WindowState, "id" | "open" | "m
     minWidth: 360,
     minHeight: 300,
   },
+  surf: {
+    title: "Surf.app",
+    x: 180,
+    y: 92,
+    width: 760,
+    height: 620,
+    minWidth: 560,
+    minHeight: 480,
+  },
 };
 
 const shortcuts: Shortcut[] = [
@@ -132,6 +142,7 @@ const shortcuts: Shortcut[] = [
   { id: "github", label: "GitHub.url", type: "url", href: contact.github, initials: "GH" },
   { id: "linkedin", label: "LinkedIn.url", type: "url", href: contact.linkedin, initials: "IN" },
   { id: "coffee", label: "Coffee.txt", type: "file", appId: "coffee", initials: "CF" },
+  { id: "surf", label: "Surf.app", type: "app", appId: "surf", initials: "SF" },
 ];
 
 const DesktopEdgeGap = 8;
@@ -591,11 +602,18 @@ export default function DesktopShell() {
   const dockShortcuts = useMemo(
     () =>
       shortcuts.filter((shortcut) =>
-        ["terminal", "projects", "resume", "mcp", "github", "linkedin"].includes(
+        ["terminal", "projects", "resume", "surf", "mcp", "github", "linkedin"].includes(
           shortcut.id
         )
       ),
     []
+  );
+  const activeWindowId = useMemo(
+    () =>
+      Object.values(windows)
+        .filter((state) => state.open && !state.minimized)
+        .sort((a, b) => b.z - a.z)[0]?.id,
+    [windows]
   );
 
   return (
@@ -638,7 +656,11 @@ export default function DesktopShell() {
               startResize(state.id, event, direction)
             }
           >
-            <WindowContent appId={state.id} openApp={openApp} />
+            <WindowContent
+              appId={state.id}
+              openApp={openApp}
+              active={state.id === activeWindowId}
+            />
           </DesktopWindow>
         ))}
 
@@ -785,6 +807,13 @@ function Spotlight({
         description: "Inspect the public agent-readable profile endpoint.",
         kind: "App",
         appId: "mcp",
+      },
+      {
+        id: "surf",
+        label: "Surf.app",
+        description: "Play Dawn Patrol, a one-button NorCal wave timing game.",
+        kind: "App",
+        appId: "surf",
       },
       {
         id: "about",
@@ -1032,9 +1061,11 @@ function Dock({
 function WindowContent({
   appId,
   openApp,
+  active = true,
 }: {
   appId: TerminalAppId;
   openApp: (id: TerminalAppId, source?: string) => void;
+  active?: boolean;
 }) {
   if (appId === "terminal") {
     return <Terminal embedded onOpenApp={(id) => openApp(id, "terminal")} />;
@@ -1045,6 +1076,7 @@ function WindowContent({
   if (appId === "mcp") return <McpWindow />;
   if (appId === "about") return <AboutWindow />;
   if (appId === "coffee") return <CoffeeWindow />;
+  if (appId === "surf") return <SurfGame active={active} />;
   return null;
 }
 
@@ -1218,7 +1250,7 @@ function MobileShell({
   openApp: (id: TerminalAppId, source?: string) => void;
 }) {
   const mobileShortcuts = shortcuts.filter((shortcut) =>
-    ["terminal", "projects", "resume", "writing", "mcp", "about", "engramviz"].includes(
+    ["terminal", "projects", "resume", "writing", "surf", "mcp", "about", "engramviz"].includes(
       shortcut.id
     )
   );

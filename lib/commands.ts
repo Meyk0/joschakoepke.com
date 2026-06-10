@@ -18,7 +18,8 @@ export type TerminalAppId =
   | "writing"
   | "mcp"
   | "about"
-  | "coffee";
+  | "coffee"
+  | "surf";
 
 export interface CommandResult {
   output: string;
@@ -61,6 +62,8 @@ function appFromAlias(value: string): TerminalAppId | null {
     about: "about",
     bio: "about",
     coffee: "coffee",
+    surf: "surf",
+    dawnpatrol: "surf",
   };
 
   return aliases[normalize(value)] ?? null;
@@ -134,6 +137,7 @@ const commands: Record<string, CommandHandler> = {
       "  mcp tools     List all MCP tool signatures",
       "  mcp connect   How to connect from Claude",
       "  open          Open a desktop app (try: open projects)",
+      "  surf          Launch Dawn Patrol",
       "  project       Project details (try: project engramviz)",
       "  tree          Show the portfolio filesystem",
       "  grep          Search portfolio data",
@@ -255,7 +259,7 @@ const commands: Record<string, CommandHandler> = {
     if (!appId) {
       return {
         output:
-          "  Usage: open projects | resume | writing | mcp | about | coffee",
+          "  Usage: open projects | resume | writing | mcp | about | coffee | surf",
       };
     }
 
@@ -264,6 +268,11 @@ const commands: Record<string, CommandHandler> = {
       action: { type: "open_app", appId },
     };
   },
+
+  surf: () => ({
+    output: "  Opening Dawn Patrol.",
+    action: { type: "open_app", appId: "surf" },
+  }),
 
   project: (args: string) => {
     const trimmed = args.trim();
@@ -527,6 +536,7 @@ export const terminalAppNames: TerminalAppId[] = [
   "mcp",
   "about",
   "coffee",
+  "surf",
 ];
 export const terminalFileNames = [
   "bio.txt",
