@@ -64,19 +64,19 @@ const spots: SurfSpot[] = [
 ];
 
 const obstacleTemplates: ObstacleTemplate[] = [
-  { kind: "kelp", label: "kelp patch", width: 48, height: 30, bottom: 38, minDistance: 0 },
-  { kind: "board", label: "loose board", width: 62, height: 22, bottom: 42, minDistance: 35 },
-  { kind: "buoy", label: "channel buoy", width: 34, height: 42, bottom: 39, minDistance: 75 },
-  { kind: "driftwood", label: "driftwood", width: 58, height: 26, bottom: 42, minDistance: 100 },
-  { kind: "paddler", label: "paddler", width: 70, height: 34, bottom: 44, minDistance: 150 },
-  { kind: "wake", label: "jet-ski wake", width: 78, height: 30, bottom: 40, minDistance: 230 },
-  { kind: "shark", label: "shark fin", width: 46, height: 36, bottom: 42, minDistance: 420 },
+  { kind: "kelp", label: "kelp patch", width: 48, height: 30, bottom: 64, minDistance: 0 },
+  { kind: "board", label: "loose board", width: 62, height: 22, bottom: 68, minDistance: 35 },
+  { kind: "buoy", label: "channel buoy", width: 34, height: 42, bottom: 65, minDistance: 75 },
+  { kind: "driftwood", label: "driftwood", width: 58, height: 26, bottom: 68, minDistance: 100 },
+  { kind: "paddler", label: "paddler", width: 70, height: 34, bottom: 70, minDistance: 150 },
+  { kind: "wake", label: "foam pile", width: 78, height: 30, bottom: 66, minDistance: 230 },
+  { kind: "shark", label: "shark fin", width: 46, height: 36, bottom: 68, minDistance: 420 },
 ];
 
 const SurferX = 92;
 const SurferWidth = 72;
 const SurferHeight = 52;
-const WaterlineBottom = 46;
+const WaterlineBottom = 72;
 const StartSpeed = 0.32;
 const MaxSpeed = 0.64;
 const JumpVelocity = 0.72;
@@ -403,11 +403,19 @@ export default function SurfGame({ active = true }: { active?: boolean }) {
         <div className="surf-sun" />
         <div className="surf-headland" />
         <div className="surf-water" />
+        <div className="surf-whitewater" />
         <div className="surf-wave-face">
           <span className="wave-lip" />
           <span className="wave-foam foam-one" />
           <span className="wave-foam foam-two" />
         </div>
+        <div className="surf-wave-curl">
+          <span className="curl-pocket" />
+          <span className="curl-spray spray-one" />
+          <span className="curl-spray spray-two" />
+        </div>
+        <div className="surf-face-line line-one" />
+        <div className="surf-face-line line-two" />
         <div
           className={`surf-runner-surfer ${isJumping ? "jumping" : ""}`}
           style={{ left: SurferX, bottom: WaterlineBottom + snapshot.jumpY }}
