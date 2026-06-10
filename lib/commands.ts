@@ -137,7 +137,7 @@ const commands: Record<string, CommandHandler> = {
       "  mcp tools     List all MCP tool signatures",
       "  mcp connect   How to connect from Claude",
       "  open          Open a desktop app (try: open projects)",
-      "  surf          Launch Dawn Patrol",
+      "  surf          Launch Lineup Runner",
       "  project       Project details (try: project engramviz)",
       "  tree          Show the portfolio filesystem",
       "  grep          Search portfolio data",
@@ -270,7 +270,7 @@ const commands: Record<string, CommandHandler> = {
   },
 
   surf: () => ({
-    output: "  Opening Dawn Patrol.",
+    output: "  Opening Lineup Runner.",
     action: { type: "open_app", appId: "surf" },
   }),
 

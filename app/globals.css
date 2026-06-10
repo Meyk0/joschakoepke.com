@@ -973,14 +973,15 @@ button {
   height: 100%;
   min-height: 100%;
   flex-direction: column;
-  gap: 14px;
+  gap: 13px;
   overflow: hidden;
   background:
-    linear-gradient(180deg, rgba(229, 244, 255, 0.98) 0%, rgba(250, 253, 255, 0.95) 46%),
-    #e8f6ff;
+    linear-gradient(180deg, rgba(226, 246, 255, 0.98) 0%, rgba(245, 251, 255, 0.96) 48%),
+    #e9f7ff;
   color: #0f172a;
-  padding: 24px;
+  padding: 22px;
   user-select: none;
+  outline: none;
 }
 
 .surf-header {
@@ -992,7 +993,7 @@ button {
 
 .surf-header h1 {
   color: #0f172a;
-  font-size: 28px;
+  font-size: 27px;
   letter-spacing: 0;
 }
 
@@ -1008,11 +1009,12 @@ button {
 .surf-conditions span {
   border: 1px solid rgba(14, 116, 144, 0.2);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.54);
+  background: rgba(255, 255, 255, 0.64);
   color: #164e63;
   padding: 5px 9px;
   font-size: 12px;
   font-weight: 800;
+  box-shadow: 0 8px 22px rgba(8, 47, 73, 0.06);
 }
 
 .surf-conditions {
@@ -1021,28 +1023,73 @@ button {
 
 .surf-scene {
   position: relative;
-  min-height: 260px;
+  min-height: 285px;
   flex: 1;
   overflow: hidden;
   border: 1px solid rgba(14, 116, 144, 0.18);
   border-radius: 8px;
-  background: #bfe8ff;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.36);
+  background: #c8edff;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.42),
+    0 18px 42px rgba(8, 47, 73, 0.12);
   cursor: pointer;
 }
 
 .surf-sky {
   position: absolute;
-  inset: 0 0 44%;
+  inset: 0 0 39%;
   background:
-    linear-gradient(180deg, #b6e5ff 0%, #f7fbff 100%),
-    radial-gradient(circle at 18% 20%, rgba(255, 211, 112, 0.8), transparent 18%);
+    linear-gradient(180deg, #99d9ff 0%, #dff5ff 58%, #f8fdff 100%),
+    radial-gradient(circle at 20% 22%, rgba(255, 211, 112, 0.78), transparent 18%);
+}
+
+.surf-cloud {
+  position: absolute;
+  display: block;
+  width: 96px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  filter: blur(0.1px);
+}
+
+.surf-cloud::before,
+.surf-cloud::after {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  border-radius: 50%;
+  background: inherit;
+}
+
+.surf-cloud::before {
+  left: 14px;
+  width: 34px;
+  height: 34px;
+}
+
+.surf-cloud::after {
+  right: 16px;
+  width: 42px;
+  height: 42px;
+}
+
+.cloud-one {
+  left: 12%;
+  top: 30px;
+}
+
+.cloud-two {
+  right: 18%;
+  top: 62px;
+  width: 78px;
+  opacity: 0.7;
 }
 
 .surf-sun {
   position: absolute;
-  top: 34px;
-  right: 58px;
+  top: 32px;
+  right: 56px;
   width: 54px;
   height: 54px;
   border-radius: 50%;
@@ -1050,111 +1097,314 @@ button {
   box-shadow: 0 0 44px rgba(255, 196, 87, 0.58);
 }
 
+.surf-headland {
+  position: absolute;
+  right: -24px;
+  top: 33%;
+  width: 38%;
+  height: 18%;
+  border-radius: 80% 0 0 0;
+  background:
+    linear-gradient(160deg, rgba(68, 64, 60, 0.24), rgba(15, 118, 110, 0.16)),
+    #7dd3fc;
+  opacity: 0.68;
+}
+
 .surf-water {
   position: absolute;
-  inset: 42% 0 0;
+  inset: 39% 0 0;
   background:
     repeating-linear-gradient(
-      170deg,
-      rgba(255, 255, 255, 0.22) 0 2px,
-      transparent 2px 22px
+      172deg,
+      rgba(255, 255, 255, 0.2) 0 2px,
+      transparent 2px 24px
     ),
-    linear-gradient(180deg, #35b8d6 0%, #0e7490 62%, #075985 100%);
+    linear-gradient(180deg, #58cce2 0%, #0e91b3 56%, #075985 100%);
 }
 
-.takeoff-zone {
-  position: absolute;
-  left: 30%;
-  top: 40%;
-  bottom: 15%;
-  width: 68px;
-  border-left: 2px solid rgba(255, 255, 255, 0.76);
-  border-right: 2px solid rgba(255, 255, 255, 0.42);
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.16), transparent);
-}
-
-.takeoff-zone.active {
-  background: rgba(125, 255, 189, 0.22);
-}
-
-.takeoff-zone span {
-  position: absolute;
-  left: 7px;
-  bottom: 8px;
-  color: rgba(255, 255, 255, 0.82);
-  font-size: 11px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.surf-wave {
-  position: absolute;
-  top: 39%;
-  width: 145px;
-  height: 118px;
-  transform: translateX(-50%);
-}
-
-.surf-wave::before {
+.surf-water::before {
   content: "";
   position: absolute;
-  inset: 8px 0 0;
-  border-radius: 70% 12% 42% 52%;
+  inset: 8% -120px 20%;
   background:
-    radial-gradient(circle at 75% 30%, rgba(255, 255, 255, 0.96) 0 16%, transparent 17%),
-    linear-gradient(135deg, #ecfeff 0%, #5eead4 34%, #0891b2 72%);
-  box-shadow: 0 20px 35px rgba(8, 47, 73, 0.26);
+    repeating-linear-gradient(
+      92deg,
+      rgba(236, 254, 255, 0.45) 0 34px,
+      transparent 34px 84px
+    );
+  opacity: 0.44;
+  animation: surf-current 5.2s linear infinite;
 }
 
-.surf-wave span {
+.surf-wave-face {
   position: absolute;
-  right: 20px;
-  top: 20px;
-  width: 42px;
-  height: 42px;
+  left: -7%;
+  right: -7%;
+  bottom: -18px;
+  height: 56%;
+  border-radius: 58% 42% 0 0 / 36% 58% 0 0;
+  background:
+    radial-gradient(circle at 22% 10%, rgba(255, 255, 255, 0.82) 0 0.8%, transparent 1.2%),
+    linear-gradient(170deg, rgba(224, 252, 255, 0.86) 0 8%, rgba(45, 212, 191, 0.78) 24%, rgba(14, 116, 144, 0.96) 70%);
+  box-shadow: inset 0 18px 28px rgba(255, 255, 255, 0.2);
+}
+
+.wave-lip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -4px;
+  height: 26px;
   border-radius: 50%;
-  border: 10px solid rgba(255, 255, 255, 0.82);
-  border-left-color: transparent;
-  border-bottom-color: transparent;
-  transform: rotate(18deg);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.92), rgba(207, 250, 254, 0.54));
+  transform: rotate(-1deg);
 }
 
-.surfer {
+.wave-foam {
   position: absolute;
-  left: calc(30% + 18px);
-  top: 62%;
-  width: 78px;
-  height: 34px;
-  transform: rotate(-5deg);
-  transition: transform 0.18s ease;
+  display: block;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(236, 254, 255, 0.62);
+  animation: surf-current 3.8s linear infinite;
 }
 
-.surfer.paddling {
-  transform: translateY(-4px) rotate(-8deg);
+.foam-one {
+  left: 18%;
+  top: 42%;
+  width: 34%;
+}
+
+.foam-two {
+  left: 48%;
+  top: 68%;
+  width: 28%;
+  opacity: 0.64;
+}
+
+.surf-runner-surfer {
+  position: absolute;
+  z-index: 5;
+  width: 72px;
+  height: 52px;
+  transition: transform 0.08s linear;
+  transform: rotate(-3deg);
+}
+
+.surf-runner-surfer.jumping {
+  transform: rotate(-8deg);
+}
+
+.surfer-shadow {
+  position: absolute;
+  left: 5px;
+  right: 5px;
+  bottom: -7px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(8, 47, 73, 0.26);
+  filter: blur(2px);
+}
+
+.surfer-body {
+  position: absolute;
+  left: 27px;
+  top: 3px;
+  width: 28px;
+  height: 26px;
+  transform: rotate(16deg);
 }
 
 .surfer-head {
+  content: "";
   position: absolute;
-  left: 30px;
-  top: -7px;
-  width: 12px;
-  height: 12px;
+  left: 10px;
+  top: -6px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
-  background: #0f172a;
+  background: #172033;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.24);
+}
+
+.surfer-torso {
+  position: absolute;
+  left: 8px;
+  top: 6px;
+  width: 19px;
+  height: 17px;
+  border-radius: 8px 8px 4px 4px;
+  background: #ef4444;
+  transform: skewX(-8deg);
+}
+
+.surfer-arm {
+  position: absolute;
+  top: 11px;
+  width: 19px;
+  height: 4px;
+  border-radius: 999px;
+  background: #172033;
+}
+
+.surfer-arm.front {
+  left: -3px;
+  transform: rotate(23deg);
+}
+
+.surfer-arm.back {
+  right: -3px;
+  transform: rotate(-28deg);
+  opacity: 0.75;
 }
 
 .surfboard {
   position: absolute;
-  inset: 12px 0 0;
+  left: 0;
+  right: 0;
+  bottom: 6px;
+  height: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: linear-gradient(90deg, #fef3c7, #f97316);
-  color: #7c2d12;
+  background: linear-gradient(90deg, #f8fafc 0%, #fde68a 46%, #f97316 100%);
+  color: #78350f;
   font-size: 10px;
   font-weight: 900;
-  box-shadow: 0 9px 18px rgba(7, 89, 133, 0.24);
+  box-shadow:
+    0 8px 15px rgba(7, 89, 133, 0.25),
+    inset 0 0 0 1px rgba(120, 53, 15, 0.16);
+}
+
+.runner-obstacle {
+  position: absolute;
+  z-index: 4;
+  transform-origin: center bottom;
+}
+
+.runner-obstacle span,
+.runner-obstacle::before,
+.runner-obstacle::after {
+  content: "";
+  position: absolute;
+  display: block;
+}
+
+.obstacle-kelp span {
+  left: 8px;
+  bottom: 0;
+  width: 11px;
+  height: 28px;
+  border-radius: 999px 999px 0 0;
+  background: #166534;
+  box-shadow:
+    12px 6px 0 #15803d,
+    24px 0 0 #14532d;
+}
+
+.obstacle-kelp::before {
+  left: 1px;
+  bottom: 0;
+  width: 48px;
+  height: 9px;
+  border-radius: 999px;
+  background: rgba(22, 101, 52, 0.72);
+}
+
+.obstacle-board span {
+  inset: 5px 0 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #fde68a, #fb7185);
+  box-shadow: inset 0 0 0 1px rgba(127, 29, 29, 0.18);
+}
+
+.obstacle-board::after {
+  left: 27px;
+  top: 6px;
+  width: 3px;
+  height: 13px;
+  background: rgba(127, 29, 29, 0.36);
+}
+
+.obstacle-buoy span {
+  left: 8px;
+  top: 2px;
+  width: 19px;
+  height: 27px;
+  border-radius: 11px 11px 7px 7px;
+  background:
+    linear-gradient(180deg, #fef2f2 0 29%, #ef4444 30% 70%, #fef2f2 71%);
+  box-shadow: 0 5px 10px rgba(7, 89, 133, 0.22);
+}
+
+.obstacle-buoy::after {
+  left: 15px;
+  bottom: 0;
+  width: 4px;
+  height: 12px;
+  background: #475569;
+}
+
+.obstacle-driftwood span {
+  left: 2px;
+  right: 2px;
+  bottom: 5px;
+  height: 14px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #854d0e, #a16207, #713f12);
+  box-shadow: inset 9px 0 0 rgba(255, 255, 255, 0.12);
+}
+
+.obstacle-paddler span {
+  left: 0;
+  right: 0;
+  bottom: 3px;
+  height: 11px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #dbeafe, #60a5fa);
+}
+
+.obstacle-paddler::before {
+  left: 33px;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #172033;
+}
+
+.obstacle-paddler::after {
+  left: 25px;
+  top: 16px;
+  width: 24px;
+  height: 5px;
+  border-radius: 999px;
+  background: #172033;
+}
+
+.obstacle-wake span {
+  left: 0;
+  right: 0;
+  bottom: 4px;
+  height: 18px;
+  border-radius: 999px 999px 8px 8px;
+  background:
+    radial-gradient(circle at 16% 50%, #ecfeff 0 24%, transparent 26%),
+    radial-gradient(circle at 42% 48%, #ecfeff 0 27%, transparent 29%),
+    radial-gradient(circle at 68% 55%, #ecfeff 0 21%, transparent 23%);
+  opacity: 0.9;
+}
+
+.obstacle-shark span {
+  left: 6px;
+  bottom: 3px;
+  width: 34px;
+  height: 30px;
+  border-radius: 80% 12% 0 0;
+  background: #172033;
+  clip-path: polygon(0 100%, 54% 0, 100% 100%);
+  box-shadow: 0 8px 12px rgba(8, 47, 73, 0.18);
 }
 
 .surf-result {
@@ -1177,17 +1427,47 @@ button {
   line-height: 1.45;
 }
 
-.surf-result.perfect {
-  border-left-color: #10b981;
-}
-
-.surf-result.good {
+.surf-result.running {
   border-left-color: #0ea5e9;
 }
 
-.surf-result.miss,
 .surf-result.wipeout {
   border-left-color: #f97316;
+}
+
+.surf-result.idle {
+  border-left-color: #10b981;
+}
+
+.surf-overlay {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 8;
+  display: flex;
+  width: min(360px, calc(100% - 40px));
+  flex-direction: column;
+  gap: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 8px;
+  background: rgba(8, 47, 73, 0.68);
+  color: white;
+  padding: 16px;
+  text-align: center;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 20px 60px rgba(8, 47, 73, 0.28);
+  backdrop-filter: blur(16px) saturate(140%);
+}
+
+.surf-overlay strong {
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.surf-overlay span {
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .surf-action {
@@ -1204,6 +1484,16 @@ button {
 
 .surf-action:hover {
   background: #164e63;
+}
+
+@keyframes surf-current {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-84px);
+  }
 }
 
 .mobile-shell {
@@ -1369,12 +1659,26 @@ button {
   }
 
   .surf-scene {
-    min-height: 230px;
+    min-height: 255px;
   }
 
-  .takeoff-zone {
-    left: 28%;
-    width: 58px;
+  .surf-game {
+    gap: 11px;
+  }
+
+  .surf-overlay {
+    width: min(300px, calc(100% - 28px));
+    padding: 14px;
+  }
+
+  .surf-overlay strong {
+    font-size: 19px;
+  }
+
+  .surf-scoreboard span,
+  .surf-conditions span {
+    font-size: 11px;
+    padding: 4px 7px;
   }
 }
 

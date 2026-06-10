@@ -362,7 +362,6 @@ export default function DesktopShell() {
           z: ++zRef.current,
         },
       }));
-      setMobilePanel(id === "terminal" ? null : id);
       trackEvent("desktop_app_open", { app: id, source });
     },
     []
@@ -811,7 +810,7 @@ function Spotlight({
       {
         id: "surf",
         label: "Surf.app",
-        description: "Play Dawn Patrol, a one-button NorCal wave timing game.",
+        description: "Play Lineup Runner, a one-button NorCal surf dodging game.",
         kind: "App",
         appId: "surf",
       },
