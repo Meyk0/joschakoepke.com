@@ -241,10 +241,13 @@ button {
   pointer-events: auto;
 }
 
-.desktop-icon:hover,
+.desktop-icon:hover {
+  background: transparent;
+}
+
 .desktop-icon:focus-visible {
-  background: rgba(255, 255, 255, 0.14);
-  outline: none;
+  outline: 1px solid rgba(255, 255, 255, 0.48);
+  outline-offset: 3px;
 }
 
 .desktop-icon-symbol {
