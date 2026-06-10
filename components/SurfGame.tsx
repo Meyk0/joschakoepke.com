@@ -94,6 +94,7 @@ export default function SurfGame({ active = true }: { active?: boolean }) {
   const frameRef = useRef<number | null>(null);
   const currentProgressRef = useRef(0);
   const wasActiveRef = useRef(false);
+  const paddleRef = useRef<() => void>(() => {});
   const spot = useMemo(() => getSpot(round), [round]);
 
   useEffect(() => {
@@ -111,7 +112,6 @@ export default function SurfGame({ active = true }: { active?: boolean }) {
   }, []);
 
   const startRound = useCallback(() => {
-    if (!active) return;
     const nextRound = result ? round + 1 : round;
     const nextSpot = getSpot(nextRound);
     const nextDuration = RoundDurationMs / nextSpot.speed;
@@ -152,10 +152,9 @@ export default function SurfGame({ active = true }: { active?: boolean }) {
     };
 
     frameRef.current = window.requestAnimationFrame(tick);
-  }, [active, result, round, stopFrame]);
+  }, [result, round, stopFrame]);
 
   const paddle = useCallback(() => {
-    if (!active) return;
     if (!running) {
       startRound();
       return;
@@ -196,29 +195,42 @@ export default function SurfGame({ active = true }: { active?: boolean }) {
         ride: nextResult.ride,
       });
     }
-  }, [active, bestRide, running, spot, startRound, stopFrame]);
+  }, [bestRide, running, spot, startRound, stopFrame]);
+
+  useEffect(() => {
+    paddleRef.current = paddle;
+  }, [paddle]);
 
   useEffect(() => {
     if (!active) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.code === "Space") {
         event.preventDefault();
-        paddle();
+        paddleRef.current();
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
-      stopFrame();
     };
-  }, [active, paddle, stopFrame]);
+  }, [active]);
+
+  useEffect(() => {
+    return () => stopFrame();
+  }, [stopFrame]);
 
   const waveLeft = `${100 - progress}%`;
   const timingDistance = Math.abs(progress - TargetProgress);
   const isInPocket = running && timingDistance <= 7;
 
   return (
-    <div className="surf-game" onPointerDown={paddle}>
+    <div
+      className="surf-game"
+      onPointerDown={(event) => {
+        if ((event.target as HTMLElement).closest("button")) return;
+        paddle();
+      }}
+    >
       <div className="surf-header">
         <div>
           <div className="window-kicker">Dawn Patrol</div>
@@ -266,7 +278,6 @@ export default function SurfGame({ active = true }: { active?: boolean }) {
       <button
         type="button"
         className="surf-action"
-        onPointerDown={(event) => event.stopPropagation()}
         onClick={paddle}
       >
         {running ? "Paddle now" : result ? "Next wave" : "Start session"}
