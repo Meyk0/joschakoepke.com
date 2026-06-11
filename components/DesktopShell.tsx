@@ -1270,7 +1270,7 @@ function MobileShell({
         />
       </div>
       {mobilePanel && mobilePanel !== "terminal" && (
-        <div className="mobile-panel">
+        <div className={`mobile-panel mobile-panel-${mobilePanel}`}>
           <div className="mobile-panel-bar">
             <span>{windowDefaults[mobilePanel].title}</span>
             <button type="button" onClick={() => setMobilePanel(null)}>

@@ -5,20 +5,10 @@ import { trackEvent } from "@/lib/analytics";
 
 type SurfSpot = {
   name: string;
-  swell: string;
-  wind: string;
-  tide: string;
 };
 
 type RunnerMode = "idle" | "running" | "wipeout";
-type ObstacleKind =
-  | "kelp"
-  | "board"
-  | "buoy"
-  | "paddler"
-  | "driftwood"
-  | "wake"
-  | "shark";
+type ObstacleKind = "shark" | "sea-lion" | "retriever";
 
 type ObstacleTemplate = {
   kind: ObstacleKind;
@@ -27,6 +17,7 @@ type ObstacleTemplate = {
   height: number;
   bottom: number;
   minDistance: number;
+  role?: "hazard" | "bonus";
 };
 
 type Obstacle = ObstacleTemplate & {
@@ -44,6 +35,7 @@ type RunnerState = {
   velocity: number;
   nextSpawnAt: number;
   cleared: number;
+  stoke: number;
   spotIndex: number;
   runId: number;
   message: string;
@@ -52,26 +44,38 @@ type RunnerState = {
 };
 
 const spots: SurfSpot[] = [
-  { name: "Ocean Beach", swell: "4-6 ft", wind: "light offshore", tide: "mid" },
-  { name: "Linda Mar", swell: "3-4 ft", wind: "clean morning", tide: "incoming" },
-  { name: "Steamer Lane", swell: "4 ft", wind: "glassy", tide: "mid" },
-  { name: "Pleasure Point", swell: "3 ft", wind: "light cross-shore", tide: "high" },
-  { name: "Fort Point", swell: "3-5 ft", wind: "under the bridge", tide: "outgoing" },
-  { name: "Bolinas", swell: "2-3 ft", wind: "soft", tide: "mid" },
-  { name: "Stinson Beach", swell: "2-4 ft", wind: "calm", tide: "incoming" },
-  { name: "Salmon Creek", swell: "4-5 ft", wind: "crisp", tide: "low" },
-  { name: "Mavericks", swell: "12 ft", wind: "serious", tide: "low" },
+  { name: "Ocean Beach" },
+  { name: "Linda Mar" },
+  { name: "Steamer Lane" },
+  { name: "Pleasure Point" },
+  { name: "Fort Point" },
+  { name: "Bolinas" },
+  { name: "Stinson Beach" },
+  { name: "Salmon Creek" },
+  { name: "Mavericks" },
 ];
 
 const obstacleTemplates: ObstacleTemplate[] = [
-  { kind: "kelp", label: "kelp patch", width: 48, height: 30, bottom: 64, minDistance: 0 },
-  { kind: "board", label: "loose board", width: 62, height: 22, bottom: 68, minDistance: 35 },
-  { kind: "buoy", label: "channel buoy", width: 34, height: 42, bottom: 65, minDistance: 75 },
-  { kind: "driftwood", label: "driftwood", width: 58, height: 26, bottom: 68, minDistance: 100 },
-  { kind: "paddler", label: "paddler", width: 70, height: 34, bottom: 70, minDistance: 150 },
-  { kind: "wake", label: "foam pile", width: 78, height: 30, bottom: 66, minDistance: 230 },
-  { kind: "shark", label: "shark fin", width: 46, height: 36, bottom: 68, minDistance: 420 },
+  { kind: "sea-lion", label: "sea lion pop-up", width: 58, height: 40, bottom: 66, minDistance: 0 },
+  { kind: "shark", label: "great white shark", width: 70, height: 52, bottom: 62, minDistance: 0 },
+  {
+    kind: "retriever",
+    label: "golden retriever cameo",
+    width: 50,
+    height: 60,
+    bottom: 61,
+    minDistance: 0,
+    role: "bonus",
+  },
 ];
+
+const obstacleImages: Partial<Record<ObstacleKind, string>> = {
+  "sea-lion": "/surf/obstacles/sea-lion.png",
+  retriever: "/surf/obstacles/retriever.png",
+  shark: "/surf/obstacles/shark.png",
+};
+
+const obstacleImageSources = Object.values(obstacleImages);
 
 const SurferX = 92;
 const SurferWidth = 72;
@@ -92,6 +96,7 @@ function createIdleState(bestDistance = 0, spotIndex = 0, runId = 0): RunnerStat
     velocity: 0,
     nextSpawnAt: 34,
     cleared: 0,
+    stoke: 0,
     spotIndex,
     runId,
     message: "Press Space, click, or tap to start. Jump over lineup hazards.",
@@ -115,19 +120,32 @@ function getSpawnGap(distance: number) {
   return 54 - easing * 18 + Math.random() * 24;
 }
 
-function pickObstacle(distance: number) {
-  const options = obstacleTemplates.filter((template) => distance >= template.minDistance);
-  const sharkChance = distance > 520 && Math.random() > 0.88;
-  if (sharkChance) {
-    return obstacleTemplates.find((template) => template.kind === "shark") ?? options[0];
+function getObstacleScale(distance: number) {
+  return 0.62 + Math.min(distance / 800, 1) * 0.38;
+}
+
+function pickObstacle(id: number) {
+  const bonus = obstacleTemplates.find((template) => template.kind === "retriever");
+  if (bonus && id % 3 === 0) {
+    return bonus;
   }
+
+  const hazardSequence: ObstacleKind[] = ["shark", "sea-lion"];
+  const nextKind = hazardSequence[(id - 1) % hazardSequence.length];
+  const options = obstacleTemplates.filter(
+    (template) => template.role !== "bonus" && template.kind === nextKind
+  );
   return options[Math.floor(Math.random() * options.length)] ?? obstacleTemplates[0];
 }
 
 function makeObstacle(id: number, sceneWidth: number, distance: number): Obstacle {
-  const template = pickObstacle(distance);
+  const template = pickObstacle(id);
+  const scale = getObstacleScale(distance);
+
   return {
     ...template,
+    width: Math.round(template.width * scale),
+    height: Math.round(template.height * scale),
     id,
     x: sceneWidth + 110 + Math.random() * 90,
     cleared: false,
@@ -253,7 +271,11 @@ export default function SurfGame({ active = true }: { active?: boolean }) {
 
       for (const obstacle of state.obstacles) {
         obstacle.x -= state.speed * delta;
-        if (!obstacle.cleared && obstacle.x + obstacle.width < SurferX) {
+        if (
+          obstacle.role !== "bonus" &&
+          !obstacle.cleared &&
+          obstacle.x + obstacle.width < SurferX
+        ) {
           obstacle.cleared = true;
           state.cleared += 1;
           if (state.cleared % 5 === 0) {
@@ -269,8 +291,25 @@ export default function SurfGame({ active = true }: { active?: boolean }) {
 
       state.obstacles = state.obstacles.filter((obstacle) => obstacle.x > -120);
 
+      const bonus = state.obstacles.find(
+        (obstacle) =>
+          obstacle.role === "bonus" &&
+          !obstacle.cleared &&
+          hasCollision(obstacle, state.jumpY)
+      );
+      if (bonus) {
+        bonus.cleared = true;
+        state.stoke += 25;
+        state.message = "Golden retriever party wave. +25 stoke.";
+        trackEvent("surf_bonus_collect", {
+          spot: getSpot(state.spotIndex).name,
+          bonus: bonus.label,
+          distance: Math.floor(state.distance),
+        });
+      }
+
       const collision = state.obstacles.find((obstacle) =>
-        hasCollision(obstacle, state.jumpY)
+        obstacle.role !== "bonus" && hasCollision(obstacle, state.jumpY)
       );
       if (collision) {
         endRun(collision.label);
@@ -345,7 +384,6 @@ export default function SurfGame({ active = true }: { active?: boolean }) {
     return () => stopFrame();
   }, [stopFrame]);
 
-  const spot = getSpot(snapshot.spotIndex);
   const distance = Math.floor(snapshot.distance);
   const pace = (snapshot.speed / StartSpeed).toFixed(1);
   const isJumping = snapshot.jumpY > 6;
@@ -359,7 +397,7 @@ export default function SurfGame({ active = true }: { active?: boolean }) {
     snapshot.mode === "idle"
       ? "Press Space, click, or tap. Jump the hazards and stay on the wave."
       : snapshot.mode === "wipeout"
-        ? `${distance}m at ${spot.name}. ${snapshot.message}`
+        ? `${distance}m. ${snapshot.message}`
         : "";
 
   return (
@@ -371,6 +409,11 @@ export default function SurfGame({ active = true }: { active?: boolean }) {
         performAction();
       }}
     >
+      <div className="surf-image-preload" aria-hidden="true">
+        {obstacleImageSources.map((src) => (
+          <img key={src} src={src} alt="" />
+        ))}
+      </div>
       <div className="surf-header">
         <div>
           <div className="window-kicker">Surf.app</div>
@@ -380,15 +423,9 @@ export default function SurfGame({ active = true }: { active?: boolean }) {
           <span>{distance}m</span>
           <span>best {snapshot.bestDistance}m</span>
           <span>cleared {snapshot.cleared}</span>
+          {snapshot.stoke > 0 && <span>stoke {snapshot.stoke}</span>}
           <span>pace {pace}x</span>
         </div>
-      </div>
-
-      <div className="surf-conditions">
-        <span>{spot.name}</span>
-        <span>swell {spot.swell}</span>
-        <span>{spot.wind}</span>
-        <span>tide {spot.tide}</span>
       </div>
 
       <div
@@ -429,23 +466,31 @@ export default function SurfGame({ active = true }: { active?: boolean }) {
           </span>
           <span className="surfboard">JK</span>
         </div>
-        {snapshot.obstacles.map((obstacle) => (
-          <div
-            key={obstacle.id}
-            className={`runner-obstacle obstacle-${obstacle.kind} ${
-              obstacle.cleared ? "cleared" : ""
-            }`}
-            style={{
-              left: obstacle.x,
-              bottom: obstacle.bottom,
-              width: obstacle.width,
-              height: obstacle.height,
-            }}
-            aria-label={obstacle.label}
-          >
-            <span />
-          </div>
-        ))}
+        {snapshot.obstacles.map((obstacle) => {
+          const imageSrc = obstacleImages[obstacle.kind];
+
+          return (
+            <div
+              key={obstacle.id}
+              className={`runner-obstacle obstacle-${obstacle.kind} ${
+                imageSrc ? "has-image" : ""
+              } ${obstacle.cleared ? "cleared" : ""}`}
+              style={{
+                left: obstacle.x,
+                bottom: obstacle.bottom,
+                width: obstacle.width,
+                height: obstacle.height,
+              }}
+              aria-label={obstacle.label}
+            >
+              {imageSrc ? (
+                <img src={imageSrc} alt="" draggable={false} />
+              ) : (
+                <span />
+              )}
+            </div>
+          );
+        })}
         {snapshot.mode !== "running" && (
           <div className={`surf-overlay ${snapshot.mode}`}>
             <strong>{overlayTitle}</strong>
