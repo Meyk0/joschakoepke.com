@@ -11,7 +11,7 @@ import {
   terminalFileNames,
   terminalProjectNames,
 } from "@/lib/commands";
-import { trackEvent } from "@/lib/analytics";
+import { trackEvent, trackMeaningfulAction } from "@/lib/analytics";
 import CommandOutput from "./CommandOutput";
 import StatusBar from "./StatusBar";
 
@@ -114,6 +114,7 @@ export default function Terminal({
   const [acIndex, setAcIndex] = useState(-1);
   const [typedWelcome, setTypedWelcome] = useState("");
   const [bootDone, setBootDone] = useState(false);
+  const [bootDate, setBootDate] = useState("");
   const [theme, setTheme] = useState<"dark" | "light" | "matrix">("dark");
   const [soundEnabled, setSoundEnabled] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -123,6 +124,16 @@ export default function Terminal({
     matches: string[];
     index: number;
   } | null>(null);
+
+  useEffect(() => {
+    setBootDate(
+      new Date().toLocaleDateString("en-US", {
+        month: "numeric",
+        day: "numeric",
+        year: "numeric",
+      })
+    );
+  }, []);
 
   useEffect(() => {
     let i = 0;
@@ -240,7 +251,15 @@ export default function Terminal({
     const trimmed = input.trim();
     if (!trimmed) return;
 
-    trackEvent("terminal_command", { command: trimmed.toLowerCase() });
+    const [commandName = "unknown", ...commandArgs] = trimmed
+      .toLowerCase()
+      .split(/\s+/);
+    trackMeaningfulAction("terminal_command", { command: commandName });
+    trackEvent("terminal_command", {
+      command: commandName,
+      has_arguments: commandArgs.length > 0,
+      argument_count: commandArgs.length,
+    });
     onCommand?.(trimmed);
 
     if (trimmed.toLowerCase() === "history") {
@@ -389,12 +408,6 @@ export default function Terminal({
   const focusInput = () => {
     inputRef.current?.focus();
   };
-
-  const bootDate = new Date().toLocaleDateString("en-US", {
-    month: "numeric",
-    day: "numeric",
-    year: "numeric",
-  });
 
   const content = (
     <div

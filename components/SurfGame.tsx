@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { trackEvent } from "@/lib/analytics";
+import { currentLayout, trackEvent, trackMeaningfulAction } from "@/lib/analytics";
 
 type SurfSpot = {
   name: string;
@@ -42,6 +42,17 @@ type RunnerState = {
   lastHit?: string;
   obstacles: Obstacle[];
 };
+
+type LeaderboardEntry = {
+  id: string;
+  name: string;
+  distance: number;
+  cleared: number;
+  createdAt: string;
+};
+
+const LeaderboardStorageKey = "joscha-surf-leaderboard-v1";
+const PlayerNameStorageKey = "joscha-surf-player-name-v1";
 
 const spots: SurfSpot[] = [
   { name: "Ocean Beach" },
@@ -174,6 +185,33 @@ function hasCollision(obstacle: Obstacle, jumpY: number) {
   );
 }
 
+function sanitizePlayerName(value: string) {
+  return value
+    .replace(/[^a-zA-Z0-9 _-]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 16);
+}
+
+function loadLeaderboard() {
+  try {
+    const stored = window.localStorage.getItem(LeaderboardStorageKey);
+    const parsed = stored ? (JSON.parse(stored) as LeaderboardEntry[]) : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter(
+        (entry) =>
+          typeof entry?.name === "string" &&
+          typeof entry?.distance === "number" &&
+          typeof entry?.cleared === "number"
+      )
+      .sort((a, b) => b.distance - a.distance)
+      .slice(0, 10);
+  } catch {
+    return [];
+  }
+}
+
 export default function SurfGame({ active = true }: { active?: boolean }) {
   const initialStateRef = useRef<RunnerState | null>(null);
   if (initialStateRef.current === null) {
@@ -182,12 +220,22 @@ export default function SurfGame({ active = true }: { active?: boolean }) {
 
   const runnerRef = useRef<RunnerState>(initialStateRef.current);
   const [snapshot, setSnapshot] = useState<RunnerState>(() => cloneState(runnerRef.current));
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [playerName, setPlayerName] = useState("");
+  const [scoreSubmitted, setScoreSubmitted] = useState(false);
+  const [submittedRank, setSubmittedRank] = useState<number | null>(null);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
   const sceneRef = useRef<HTMLDivElement | null>(null);
   const frameRef = useRef<number | null>(null);
   const lastTimeRef = useRef(0);
   const nextObstacleIdRef = useRef(1);
   const actionRef = useRef<() => void>(() => {});
   const wasActiveRef = useRef(false);
+
+  useEffect(() => {
+    setLeaderboard(loadLeaderboard());
+    setPlayerName(window.localStorage.getItem(PlayerNameStorageKey) ?? "");
+  }, []);
 
   useEffect(() => {
     if (active && !wasActiveRef.current) {
@@ -215,6 +263,9 @@ export default function SurfGame({ active = true }: { active?: boolean }) {
       state.velocity = 0;
       state.lastHit = hitLabel;
       state.message = `${hitLabel} clipped your line. Press Space or tap to paddle back out.`;
+      setScoreSubmitted(false);
+      setSubmittedRank(null);
+      setShowLeaderboard(true);
 
       trackEvent("surf_wipeout", {
         spot: getSpot(state.spotIndex).name,
@@ -338,6 +389,7 @@ export default function SurfGame({ active = true }: { active?: boolean }) {
       spot: getSpot(nextSpotIndex).name,
       run: runnerRef.current.runId,
     });
+    trackMeaningfulAction("surf_run", { layout: currentLayout() });
     frameRef.current = window.requestAnimationFrame(tick);
   }, [publish, stopFrame, tick]);
 
@@ -368,6 +420,7 @@ export default function SurfGame({ active = true }: { active?: boolean }) {
     if (!active) return;
 
     const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.target as HTMLElement | null)?.matches("input, textarea")) return;
       if (event.code === "Space" || event.key === "ArrowUp") {
         event.preventDefault();
         actionRef.current();
@@ -400,12 +453,46 @@ export default function SurfGame({ active = true }: { active?: boolean }) {
         ? `${distance}m. ${snapshot.message}`
         : "";
 
+  const submitScore = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (snapshot.mode !== "wipeout" || scoreSubmitted) return;
+
+    const name = sanitizePlayerName(playerName);
+    if (!name) return;
+
+    const entry: LeaderboardEntry = {
+      id: `${Date.now()}-${snapshot.runId}`,
+      name,
+      distance,
+      cleared: snapshot.cleared,
+      createdAt: new Date().toISOString(),
+    };
+    const next = [...leaderboard, entry]
+      .sort((a, b) => b.distance - a.distance)
+      .slice(0, 10);
+    const rank = next.findIndex((item) => item.id === entry.id) + 1;
+
+    window.localStorage.setItem(LeaderboardStorageKey, JSON.stringify(next));
+    window.localStorage.setItem(PlayerNameStorageKey, name);
+    setPlayerName(name);
+    setLeaderboard(next);
+    setScoreSubmitted(true);
+    setSubmittedRank(rank || null);
+    trackMeaningfulAction("surf_score_submit", { layout: currentLayout() });
+    trackEvent("surf_score_submit", {
+      distance,
+      cleared: snapshot.cleared,
+      rank: rank || 10,
+      layout: currentLayout(),
+    });
+  };
+
   return (
     <div
       className="surf-game"
       tabIndex={0}
       onPointerDown={(event) => {
-        if ((event.target as HTMLElement).closest("button")) return;
+        if ((event.target as HTMLElement).closest("button, input, form, label")) return;
         performAction();
       }}
     >
@@ -510,13 +597,87 @@ export default function SurfGame({ active = true }: { active?: boolean }) {
         <span>{snapshot.message}</span>
       </div>
 
-      <button type="button" className="surf-action" onClick={performAction}>
-        {snapshot.mode === "running"
-          ? "Jump"
-          : snapshot.mode === "wipeout"
-            ? "Restart"
-            : "Start run"}
-      </button>
+      {showLeaderboard && (
+        <div className="surf-score-sheet" role="dialog" aria-label="Surf leaderboard">
+          <section className="surf-leaderboard-panel" aria-live="polite">
+            <div className="surf-leaderboard-heading">
+              <div>
+                <strong>Leaderboard</strong>
+                <span>This device</span>
+              </div>
+              <button type="button" onClick={() => setShowLeaderboard(false)}>
+                Close
+              </button>
+            </div>
+            {snapshot.mode === "wipeout" && !scoreSubmitted ? (
+              <form className="surf-score-form" onSubmit={submitScore}>
+                <label htmlFor="surf-player-name">Save your {distance}m run</label>
+                <div>
+                  <input
+                    id="surf-player-name"
+                    value={playerName}
+                    onChange={(event) => setPlayerName(event.target.value)}
+                    maxLength={16}
+                    placeholder="Display name"
+                    autoComplete="nickname"
+                    aria-describedby="surf-score-privacy"
+                  />
+                  <button type="submit" disabled={!sanitizePlayerName(playerName)}>
+                    Add score
+                  </button>
+                </div>
+                <small id="surf-score-privacy">Saved only on this device.</small>
+              </form>
+            ) : snapshot.mode === "wipeout" && scoreSubmitted ? (
+              <div className="surf-score-saved">
+                <strong>Run saved{submittedRank ? ` at #${submittedRank}` : ""}.</strong>
+                <span>This leaderboard stays on this device.</span>
+              </div>
+            ) : null}
+          </section>
+
+          <section className="surf-leaderboard">
+            {leaderboard.length > 0 ? (
+              <ol>
+                {leaderboard.slice(0, 5).map((entry, index) => (
+                  <li key={entry.id}>
+                    <span className="surf-rank">{index + 1}</span>
+                    <strong>{entry.name}</strong>
+                    <span>{entry.distance}m</span>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p>Finish a run to set the first score.</p>
+            )}
+          </section>
+        </div>
+      )}
+
+      <div className="surf-actions">
+        <button type="button" className="surf-action" onClick={performAction}>
+          {snapshot.mode === "running"
+            ? "Jump"
+            : snapshot.mode === "wipeout"
+              ? "Restart"
+              : "Start run"}
+        </button>
+        {!showLeaderboard && snapshot.mode !== "running" && (
+          <button
+            type="button"
+            className="surf-action secondary"
+            onClick={() => {
+              setShowLeaderboard(true);
+              trackEvent("surf_leaderboard_view", {
+                entry_count: leaderboard.length,
+                layout: currentLayout(),
+              });
+            }}
+          >
+            Leaderboard
+          </button>
+        )}
+      </div>
     </div>
   );
 }

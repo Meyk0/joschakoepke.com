@@ -5,9 +5,12 @@
   "main": "index.js",
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "generate:resume": "python3 scripts/generate_resume.py",
+    "test:e2e": "playwright test"
   },
   "repository": {
     "type": "git",
@@ -34,5 +37,8 @@
     "tailwindcss": "^4.2.1",
     "typescript": "^5.9.3",
     "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1"
   }
 }

@@ -13,6 +13,7 @@ import {
 
 export type TerminalAppId =
   | "terminal"
+  | "agent"
   | "projects"
   | "resume"
   | "writing"

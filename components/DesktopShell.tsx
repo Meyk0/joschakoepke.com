@@ -1,157 +1,44 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Terminal from "@/components/Terminal";
-import SurfGame from "@/components/SurfGame";
 import {
-  bio,
-  contact,
-  featuredArticles,
-  authoredArticles,
-  mcpTools,
-  openToWork,
-  projects,
-  resume,
-  Project,
-} from "@/content/data";
+  DesktopIcon,
+  DesktopWindow,
+  Dock,
+  MenuBar,
+  Spotlight,
+} from "@/components/desktop/DesktopChrome";
+import { WindowContent } from "@/components/desktop/AppWindows";
+import { MobileShell } from "@/components/desktop/MobileShell";
+import {
+  agentShortcut,
+  DesktopBottomGap,
+  DesktopEdgeGap,
+  DesktopIconDragThreshold,
+  DesktopIconHeight,
+  DesktopIconWidth,
+  DesktopTopGap,
+  shortcuts,
+  WindowTitlebarHeight,
+  windowDefaults,
+} from "@/components/desktop/config";
+import type {
+  AgentPhase,
+  IconPosition,
+  ResizeDirection,
+  Shortcut,
+  WindowState,
+} from "@/components/desktop/types";
+import { projects } from "@/content/data";
 import { TerminalAppId } from "@/lib/commands";
-import { trackEvent } from "@/lib/analytics";
-
-type WindowState = {
-  id: TerminalAppId;
-  title: string;
-  open: boolean;
-  minimized: boolean;
-  maximized: boolean;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  minWidth: number;
-  minHeight: number;
-  z: number;
-};
-
-type ResizeDirection =
-  | "top"
-  | "right"
-  | "bottom"
-  | "left"
-  | "top-left"
-  | "top-right"
-  | "bottom-right"
-  | "bottom-left";
-
-type Shortcut = {
-  id: string;
-  label: string;
-  type: "folder" | "file" | "app" | "url" | "terminal";
-  appId?: TerminalAppId;
-  href?: string;
-  initials?: string;
-};
-
-type IconPosition = {
-  x: number;
-  y: number;
-};
-
-const windowDefaults: Record<TerminalAppId, Omit<WindowState, "id" | "open" | "minimized" | "maximized" | "z">> = {
-  terminal: {
-    title: "Terminal",
-    x: 150,
-    y: 86,
-    width: 980,
-    height: 680,
-    minWidth: 560,
-    minHeight: 420,
-  },
-  projects: {
-    title: "Projects",
-    x: 100,
-    y: 74,
-    width: 860,
-    height: 640,
-    minWidth: 560,
-    minHeight: 430,
-  },
-  resume: {
-    title: "Resume.pdf",
-    x: 190,
-    y: 112,
-    width: 820,
-    height: 660,
-    minWidth: 560,
-    minHeight: 440,
-  },
-  writing: {
-    title: "Writing",
-    x: 230,
-    y: 96,
-    width: 780,
-    height: 560,
-    minWidth: 520,
-    minHeight: 380,
-  },
-  mcp: {
-    title: "MCP Server",
-    x: 260,
-    y: 132,
-    width: 760,
-    height: 560,
-    minWidth: 520,
-    minHeight: 380,
-  },
-  about: {
-    title: "About.txt",
-    x: 300,
-    y: 100,
-    width: 680,
-    height: 480,
-    minWidth: 440,
-    minHeight: 340,
-  },
-  coffee: {
-    title: "Coffee.txt",
-    x: 360,
-    y: 156,
-    width: 520,
-    height: 390,
-    minWidth: 360,
-    minHeight: 300,
-  },
-  surf: {
-    title: "Surf.app",
-    x: 180,
-    y: 92,
-    width: 760,
-    height: 620,
-    minWidth: 560,
-    minHeight: 480,
-  },
-};
-
-const shortcuts: Shortcut[] = [
-  { id: "terminal", label: "Terminal", type: "terminal", appId: "terminal", initials: ">_" },
-  { id: "projects", label: "Projects", type: "folder", appId: "projects", initials: "PR" },
-  { id: "resume", label: "Resume.pdf", type: "file", appId: "resume", initials: "CV" },
-  { id: "writing", label: "Writing", type: "folder", appId: "writing", initials: "WR" },
-  { id: "mcp", label: "MCP Server", type: "app", appId: "mcp", initials: "MCP" },
-  { id: "about", label: "About.txt", type: "file", appId: "about", initials: "AB" },
-  { id: "engramviz", label: "EngramViz.app", type: "app", href: "https://www.engramviz.com", initials: "EV" },
-  { id: "github", label: "GitHub.url", type: "url", href: contact.github, initials: "GH" },
-  { id: "linkedin", label: "LinkedIn.url", type: "url", href: contact.linkedin, initials: "IN" },
-  { id: "coffee", label: "Coffee.txt", type: "file", appId: "coffee", initials: "CF" },
-  { id: "surf", label: "Surf.app", type: "app", appId: "surf", initials: "SF" },
-];
-
-const DesktopEdgeGap = 8;
-const DesktopTopGap = 38;
-const DesktopBottomGap = 88;
-const WindowTitlebarHeight = 36;
-const DesktopIconWidth = 96;
-const DesktopIconHeight = 98;
-const DesktopIconDragThreshold = 4;
+import {
+  analyticsDestination,
+  currentLayout,
+  startEngagementTracking,
+  trackEvent,
+  trackMeaningfulAction,
+} from "@/lib/analytics";
+import type { AgentAnswer, AgentSource } from "@/lib/agent-types";
 
 function createInitialWindows(): Record<TerminalAppId, WindowState> {
   return Object.entries(windowDefaults).reduce((acc, [id, defaults], index) => {
@@ -226,30 +113,6 @@ function formatClock(date: Date, compact = false) {
   }).format(date);
 }
 
-function TrackedLink({
-  href,
-  children,
-  className = "",
-}: {
-  href: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={className}
-      onClick={() =>
-        trackEvent("outbound_link_click", { source: "desktop_window", href })
-      }
-    >
-      {children}
-    </a>
-  );
-}
-
 export default function DesktopShell() {
   const [windows, setWindows] = useState(createInitialWindows);
   const [iconPositions, setIconPositions] = useState(createInitialIconPositions);
@@ -257,7 +120,19 @@ export default function DesktopShell() {
   const [mobilePanel, setMobilePanel] = useState<TerminalAppId | null>(null);
   const [spotlightOpen, setSpotlightOpen] = useState(false);
   const [spotlightQuery, setSpotlightQuery] = useState("");
+  const [selectedProjectName, setSelectedProjectName] = useState(
+    projects[3]?.name ?? projects[0]?.name ?? ""
+  );
+  const [agentQuestion, setAgentQuestion] = useState("");
+  const [agentAnswer, setAgentAnswer] = useState<AgentAnswer | null>(null);
+  const [agentLoading, setAgentLoading] = useState(false);
+  const [agentPhase, setAgentPhase] = useState<AgentPhase>("idle");
+  const [agentError, setAgentError] = useState<string | null>(null);
   const zRef = useRef(80);
+  const agentRequestRef = useRef(0);
+  const agentWorkspaceSnapshotRef = useRef<Record<TerminalAppId, WindowState> | null>(
+    null
+  );
   const suppressIconOpenRef = useRef<string | null>(null);
   const dragRef = useRef<{
     id: TerminalAppId;
@@ -291,6 +166,8 @@ export default function DesktopShell() {
     const id = window.setInterval(update, 60_000);
     return () => window.clearInterval(id);
   }, []);
+
+  useEffect(() => startEngagementTracking(), []);
 
   useEffect(() => {
     setWindows((prev) => {
@@ -362,12 +239,216 @@ export default function DesktopShell() {
           z: ++zRef.current,
         },
       }));
-      trackEvent("desktop_app_open", { app: id, source });
+      trackMeaningfulAction(
+        source === "agent_source" ? "agent_source" : `app_open:${id}`,
+        { app: id, source }
+      );
+      trackEvent("app_open", {
+        app: id,
+        source,
+        layout: currentLayout(),
+      });
+      if (id === "resume") {
+        trackEvent("resume_view", { source, layout: currentLayout() });
+      }
     },
     []
   );
 
+  const startAgentWorkspace = useCallback((question: string) => {
+    setAgentQuestion(question);
+    setSpotlightOpen(false);
+    setSpotlightQuery("");
+
+    if (window.matchMedia("(max-width: 767px)").matches) {
+      setMobilePanel("agent");
+      return;
+    }
+
+    setWindows((prev) => {
+      if (!agentWorkspaceSnapshotRef.current) {
+        agentWorkspaceSnapshotRef.current = {
+          ...prev,
+          agent: {
+            ...prev.agent,
+            open: false,
+            minimized: false,
+          },
+        };
+      }
+
+      const width = Math.min(520, Math.max(440, Math.round(window.innerWidth * 0.38)));
+      const height = Math.min(680, window.innerHeight - DesktopBottomGap - 54);
+      return {
+        ...prev,
+        agent: {
+          ...prev.agent,
+          open: true,
+          minimized: false,
+          maximized: false,
+          x: 24,
+          y: 48,
+          width,
+          height,
+          z: ++zRef.current,
+        },
+      };
+    });
+  }, []);
+
+  const arrangeAgentEvidence = useCallback((answer: AgentAnswer) => {
+    const projectSource = answer.evidence.find(({ source }) => source.projectName);
+    if (projectSource?.source.projectName) {
+      setSelectedProjectName(projectSource.source.projectName);
+    }
+
+    if (window.matchMedia("(max-width: 767px)").matches) return;
+
+    const sourceApps = Array.from(
+      new Set(answer.evidence.map(({ source }) => source.appId))
+    ).slice(0, 2);
+    if (!sourceApps.length) return;
+
+    trackMeaningfulAction("shared_workspace_create", {
+      source_count: sourceApps.length,
+    });
+    trackEvent("shared_workspace_create", {
+      source_count: sourceApps.length,
+      layout: "desktop",
+      trigger: "agent_answer",
+    });
+
+    if (window.innerWidth < 1080) {
+      setWindows((prev) => {
+        const next = { ...prev };
+        sourceApps.forEach((appId) => {
+          next[appId] = {
+            ...prev[appId],
+            open: true,
+            minimized: false,
+            z: ++zRef.current,
+          };
+        });
+        next.agent = { ...prev.agent, z: ++zRef.current };
+        return next;
+      });
+      return;
+    }
+
+    setWindows((prev) => {
+      const next = { ...prev };
+      const agent = prev.agent;
+      const rightX = agent.x + agent.width + 20;
+      const availableWidth = window.innerWidth - rightX - 20;
+      const sourceWidth = Math.max(520, availableWidth);
+      const sourceHeight = Math.min(680, window.innerHeight - DesktopBottomGap - 54);
+
+      sourceApps.forEach((appId, index) => {
+        next[appId] = {
+          ...prev[appId],
+          open: true,
+          minimized: false,
+          maximized: false,
+          x: Math.min(rightX + index * 22, window.innerWidth - 540),
+          y: 48 + index * 24,
+          width: Math.min(sourceWidth, window.innerWidth - rightX - 20),
+          height: sourceHeight,
+          z: ++zRef.current,
+        };
+      });
+
+      next.agent = { ...agent, z: ++zRef.current };
+      return next;
+    });
+  }, []);
+
+  const runAgentQuestion = useCallback(
+    async (rawQuestion: string) => {
+      const question = rawQuestion.trim();
+      if (question.length < 3 || agentLoading) return;
+
+      const requestId = ++agentRequestRef.current;
+      const startedAt = performance.now();
+      startAgentWorkspace(question);
+      setAgentLoading(true);
+      setAgentAnswer(null);
+      setAgentError(null);
+      setAgentPhase("searching");
+      trackMeaningfulAction("agent_question", { layout: currentLayout() });
+      trackEvent("agent_question_submit", {
+        question_length: question.length,
+        layout: currentLayout(),
+      });
+
+      const phaseTimers = [
+        window.setTimeout(() => {
+          if (agentRequestRef.current === requestId) setAgentPhase("reading");
+        }, 450),
+        window.setTimeout(() => {
+          if (agentRequestRef.current === requestId) setAgentPhase("synthesizing");
+        }, 1050),
+      ];
+
+      try {
+        const response = await fetch("/api/agent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question }),
+        });
+        const payload = (await response.json()) as AgentAnswer & { error?: string };
+
+        if (!response.ok) {
+          throw new Error(payload.error ?? "Agent.app could not answer that question.");
+        }
+        if (agentRequestRef.current !== requestId) return;
+
+        setAgentAnswer(payload);
+        setAgentPhase("done");
+        arrangeAgentEvidence(payload);
+        trackEvent("agent_answer_complete", {
+          mode: payload.mode,
+          source_count: payload.evidence.length,
+          response_time_ms: Math.round(performance.now() - startedAt),
+          layout: currentLayout(),
+        });
+      } catch (error) {
+        if (agentRequestRef.current !== requestId) return;
+        setAgentError(
+          error instanceof Error ? error.message : "Agent.app could not answer that question."
+        );
+        setAgentPhase("idle");
+        trackEvent("agent_answer_error", {
+          response_time_ms: Math.round(performance.now() - startedAt),
+          layout: currentLayout(),
+        });
+      } finally {
+        phaseTimers.forEach((timer) => window.clearTimeout(timer));
+        if (agentRequestRef.current === requestId) setAgentLoading(false);
+      }
+    },
+    [agentLoading, arrangeAgentEvidence, startAgentWorkspace]
+  );
+
+  const openAgentSource = useCallback(
+    (source: AgentSource) => {
+      if (source.projectName) setSelectedProjectName(source.projectName);
+      openApp(source.appId, "agent_source");
+      trackEvent("agent_source_open", {
+        source_id: source.id,
+        app: source.appId,
+      });
+    },
+    [openApp]
+  );
+
   const closeWindow = (id: TerminalAppId) => {
+    if (id === "agent" && agentWorkspaceSnapshotRef.current) {
+      setWindows(agentWorkspaceSnapshotRef.current);
+      agentWorkspaceSnapshotRef.current = null;
+      trackEvent("window_close", { app: id, restored_workspace: true });
+      return;
+    }
+
     setWindows((prev) => ({
       ...prev,
       [id]: {
@@ -412,9 +493,10 @@ export default function DesktopShell() {
     }
     trackEvent("desktop_icon_click", { icon: shortcut.id, type: shortcut.type });
     if (shortcut.href) {
+      trackMeaningfulAction("outbound_link", { source: `desktop_${source}` });
       trackEvent("outbound_link_click", {
         source: `desktop_${source}`,
-        href: shortcut.href,
+        destination: analyticsDestination(shortcut.href),
       });
       window.open(shortcut.href, "_blank", "noopener,noreferrer");
       return;
@@ -599,12 +681,14 @@ export default function DesktopShell() {
   }, []);
 
   const dockShortcuts = useMemo(
-    () =>
-      shortcuts.filter((shortcut) =>
+    () => {
+      const core = shortcuts.filter((shortcut) =>
         ["terminal", "projects", "resume", "surf", "mcp", "github", "linkedin"].includes(
           shortcut.id
         )
-      ),
+      );
+      return [core[0], agentShortcut, ...core.slice(1)].filter(Boolean);
+    },
     []
   );
   const activeWindowId = useMemo(
@@ -659,6 +743,15 @@ export default function DesktopShell() {
               appId={state.id}
               openApp={openApp}
               active={state.id === activeWindowId}
+              selectedProjectName={selectedProjectName}
+              onSelectProject={setSelectedProjectName}
+              agentQuestion={agentQuestion}
+              agentAnswer={agentAnswer}
+              agentLoading={agentLoading}
+              agentPhase={agentPhase}
+              agentError={agentError}
+              onAskAgent={runAgentQuestion}
+              onOpenAgentSource={openAgentSource}
             />
           </DesktopWindow>
         ))}
@@ -668,6 +761,13 @@ export default function DesktopShell() {
             query={spotlightQuery}
             setQuery={setSpotlightQuery}
             onClose={() => setSpotlightOpen(false)}
+            onAsk={(question) => {
+              trackEvent("search", {
+                search_location: "spotlight",
+                result_type: "agent",
+              });
+              runAgentQuestion(question);
+            }}
             onSelect={(item) => {
               setSpotlightOpen(false);
               setSpotlightQuery("");
@@ -675,10 +775,17 @@ export default function DesktopShell() {
                 item: item.label,
                 kind: item.kind,
               });
+              if (spotlightQuery.trim()) {
+                trackEvent("search", {
+                  search_location: "spotlight",
+                  result_type: item.kind.toLowerCase(),
+                });
+              }
               if (item.href) {
+                trackMeaningfulAction("outbound_link", { source: "spotlight" });
                 trackEvent("outbound_link_click", {
                   source: "spotlight",
-                  href: item.href,
+                  destination: analyticsDestination(item.href),
                 });
                 window.open(item.href, "_blank", "noopener,noreferrer");
                 return;
@@ -703,612 +810,16 @@ export default function DesktopShell() {
         mobilePanel={mobilePanel}
         setMobilePanel={setMobilePanel}
         openApp={openApp}
+        selectedProjectName={selectedProjectName}
+        onSelectProject={setSelectedProjectName}
+        agentQuestion={agentQuestion}
+        agentAnswer={agentAnswer}
+        agentLoading={agentLoading}
+        agentPhase={agentPhase}
+        agentError={agentError}
+        onAskAgent={runAgentQuestion}
+        onOpenAgentSource={openAgentSource}
       />
     </main>
-  );
-}
-
-function MenuBar({
-  clock,
-  openApp,
-  openSpotlight,
-}: {
-  clock: string;
-  openApp: (id: TerminalAppId, source?: string) => void;
-  openSpotlight: () => void;
-}) {
-  const items: Array<{ label: string; appId: TerminalAppId }> = [
-    { label: "Projects", appId: "projects" },
-    { label: "Resume", appId: "resume" },
-    { label: "Writing", appId: "writing" },
-    { label: "MCP", appId: "mcp" },
-    { label: "Contact", appId: "about" },
-  ];
-
-  return (
-    <div className="menu-bar">
-      <div className="menu-left">
-        {items.map((item) => (
-          <button
-            type="button"
-            key={item.label}
-            className="menu-item"
-            onClick={() => openApp(item.appId, "menu")}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-      <div className="menu-right">
-        <button type="button" className="menu-search" onClick={openSpotlight}>
-          Search <span>⌘K</span>
-        </button>
-        <span>{clock}</span>
-      </div>
-    </div>
-  );
-}
-
-type SpotlightItem = {
-  id: string;
-  label: string;
-  description: string;
-  kind: string;
-  appId: TerminalAppId;
-  href?: string;
-};
-
-function Spotlight({
-  query,
-  setQuery,
-  onClose,
-  onSelect,
-}: {
-  query: string;
-  setQuery: (value: string) => void;
-  onClose: () => void;
-  onSelect: (item: SpotlightItem) => void;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const items = useMemo<SpotlightItem[]>(
-    () => [
-      {
-        id: "terminal",
-        label: "Terminal",
-        description: "Open the interactive portfolio terminal.",
-        kind: "App",
-        appId: "terminal",
-      },
-      {
-        id: "projects",
-        label: "Projects",
-        description: "Browse active and shipped projects.",
-        kind: "Folder",
-        appId: "projects",
-      },
-      {
-        id: "resume",
-        label: "Resume.pdf",
-        description: "View resume, impact metrics, and experience.",
-        kind: "Document",
-        appId: "resume",
-      },
-      {
-        id: "writing",
-        label: "Writing",
-        description: "Read authored articles and interviews.",
-        kind: "Folder",
-        appId: "writing",
-      },
-      {
-        id: "mcp",
-        label: "MCP Server",
-        description: "Inspect the public agent-readable profile endpoint.",
-        kind: "App",
-        appId: "mcp",
-      },
-      {
-        id: "surf",
-        label: "Surf.app",
-        description: "Play Lineup Runner, a one-button NorCal surf dodging game.",
-        kind: "App",
-        appId: "surf",
-      },
-      {
-        id: "about",
-        label: "About.txt",
-        description: "Short profile, focus areas, and contact links.",
-        kind: "Document",
-        appId: "about",
-      },
-      ...projects.map((project) => ({
-        id: `project-${project.name}`,
-        label: project.name,
-        description: project.description,
-        kind: "Project",
-        appId: "projects" as TerminalAppId,
-        href: project.url,
-      })),
-    ],
-    []
-  );
-
-  const normalized = query.trim().toLowerCase();
-  const results = items
-    .filter((item) => {
-      const haystack = `${item.label} ${item.description} ${item.kind}`.toLowerCase();
-      return !normalized || haystack.includes(normalized);
-    })
-    .slice(0, 8);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
-  return (
-    <div className="spotlight-backdrop" onMouseDown={onClose}>
-      <div className="spotlight-panel" onMouseDown={(event) => event.stopPropagation()}>
-        <input
-          ref={inputRef}
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && results[0]) {
-              onSelect(results[0]);
-            }
-          }}
-          placeholder="Search apps, projects, and files"
-          aria-label="Spotlight search"
-        />
-        <div className="spotlight-results">
-          {results.map((item, index) => (
-            <button
-              type="button"
-              key={item.id}
-              className={`spotlight-result ${index === 0 ? "active" : ""}`}
-              onClick={() => onSelect(item)}
-            >
-              <span className="spotlight-icon">{item.label.slice(0, 2).toUpperCase()}</span>
-              <span className="spotlight-copy">
-                <strong>{item.label}</strong>
-                <small>{item.kind} · {item.description}</small>
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DesktopIcon({
-  shortcut,
-  position,
-  onOpen,
-  onDragStart,
-}: {
-  shortcut: Shortcut;
-  position: IconPosition;
-  onOpen: () => void;
-  onDragStart: (event: React.PointerEvent<HTMLButtonElement>) => void;
-}) {
-  return (
-    <button
-      type="button"
-      className="desktop-icon"
-      style={{ left: position.x, top: position.y }}
-      onPointerDown={onDragStart}
-      onClick={onOpen}
-    >
-      <span className={`desktop-icon-symbol ${shortcut.type}`}>
-        <span>{shortcut.initials}</span>
-      </span>
-      <span className="desktop-icon-label">{shortcut.label}</span>
-    </button>
-  );
-}
-
-function DesktopWindow({
-  state,
-  children,
-  onFocus,
-  onClose,
-  onMinimize,
-  onMaximize,
-  onDragStart,
-  onResizeStart,
-}: {
-  state: WindowState;
-  children: React.ReactNode;
-  onFocus: () => void;
-  onClose: () => void;
-  onMinimize: () => void;
-  onMaximize: () => void;
-  onDragStart: (event: React.PointerEvent<HTMLDivElement>) => void;
-  onResizeStart: (
-    event: React.PointerEvent<HTMLDivElement>,
-    direction: ResizeDirection
-  ) => void;
-}) {
-  const hidden = !state.open || state.minimized;
-  const style = state.maximized
-    ? {
-        left: 16,
-        top: 38,
-        width: "calc(100vw - 32px)",
-        height: "calc(100vh - 124px)",
-        zIndex: state.z,
-        display: hidden ? "none" : "flex",
-      }
-    : {
-        left: state.x,
-        top: state.y,
-        width: state.width,
-        height: state.height,
-        zIndex: state.z,
-        display: hidden ? "none" : "flex",
-      };
-
-  return (
-    <section className="desktop-window" style={style} onPointerDown={onFocus}>
-      <div className="window-titlebar" onPointerDown={onDragStart}>
-        <div className="window-controls" onPointerDown={(event) => event.stopPropagation()}>
-          <button
-            type="button"
-            className="window-dot close"
-            aria-label={`Close ${state.title}`}
-            onClick={(event) => {
-              event.stopPropagation();
-              onClose();
-            }}
-          />
-          <button
-            type="button"
-            className="window-dot minimize"
-            aria-label={`Minimize ${state.title}`}
-            onClick={(event) => {
-              event.stopPropagation();
-              onMinimize();
-            }}
-          />
-          <button
-            type="button"
-            className="window-dot maximize"
-            aria-label={`Maximize ${state.title}`}
-            onClick={(event) => {
-              event.stopPropagation();
-              onMaximize();
-            }}
-          />
-        </div>
-        <div className="window-title">{state.title}</div>
-        <div className="window-title-spacer" />
-      </div>
-      <div className="window-body">{children}</div>
-      {!state.maximized && (
-        <>
-          <div
-            className="window-resize-edge right"
-            onPointerDown={(event) => onResizeStart(event, "right")}
-          />
-          <div
-            className="window-resize-edge bottom"
-            onPointerDown={(event) => onResizeStart(event, "bottom")}
-          />
-          <div
-            className="window-resize-edge left"
-            onPointerDown={(event) => onResizeStart(event, "left")}
-          />
-          <div
-            className="window-resize-edge top"
-            onPointerDown={(event) => onResizeStart(event, "top")}
-          />
-          <div
-            className="window-resize-corner top-left"
-            onPointerDown={(event) => onResizeStart(event, "top-left")}
-          />
-          <div
-            className="window-resize-corner top-right"
-            onPointerDown={(event) => onResizeStart(event, "top-right")}
-          />
-          <div
-            className="window-resize-corner bottom-left"
-            onPointerDown={(event) => onResizeStart(event, "bottom-left")}
-          />
-          <div
-            className="window-resize-corner bottom-right window-resize-handle"
-            aria-label={`Resize ${state.title}`}
-            onPointerDown={(event) => onResizeStart(event, "bottom-right")}
-          />
-        </>
-      )}
-    </section>
-  );
-}
-
-function Dock({
-  shortcuts,
-  windows,
-  onOpen,
-}: {
-  shortcuts: Shortcut[];
-  windows: Record<TerminalAppId, WindowState>;
-  onOpen: (shortcut: Shortcut) => void;
-}) {
-  return (
-    <div className="desktop-dock">
-      {shortcuts.map((shortcut) => {
-        const running =
-          shortcut.appId && windows[shortcut.appId]?.open && !windows[shortcut.appId]?.minimized;
-        return (
-          <button
-            type="button"
-            key={shortcut.id}
-            className="dock-item"
-            onClick={() => onOpen(shortcut)}
-            aria-label={`Open ${shortcut.label}`}
-          >
-            <span className={`dock-symbol ${shortcut.type}`}>{shortcut.initials}</span>
-            {running && <span className="dock-running" />}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function WindowContent({
-  appId,
-  openApp,
-  active = true,
-}: {
-  appId: TerminalAppId;
-  openApp: (id: TerminalAppId, source?: string) => void;
-  active?: boolean;
-}) {
-  if (appId === "terminal") {
-    return <Terminal embedded onOpenApp={(id) => openApp(id, "terminal")} />;
-  }
-  if (appId === "projects") return <ProjectsWindow />;
-  if (appId === "resume") return <ResumeWindow />;
-  if (appId === "writing") return <WritingWindow />;
-  if (appId === "mcp") return <McpWindow />;
-  if (appId === "about") return <AboutWindow />;
-  if (appId === "coffee") return <CoffeeWindow />;
-  if (appId === "surf") return <SurfGame active={active} />;
-  return null;
-}
-
-function ProjectsWindow() {
-  const [selected, setSelected] = useState<Project>(projects[3] ?? projects[0]);
-
-  return (
-    <div className="app-window projects-window">
-      <aside className="project-list" aria-label="Projects">
-        {projects.map((project) => (
-          <button
-            type="button"
-            key={project.name}
-            className={`project-row ${project.name === selected.name ? "active" : ""}`}
-            onClick={() => setSelected(project)}
-          >
-            <span>{project.name}</span>
-            <small>{project.status}</small>
-          </button>
-        ))}
-      </aside>
-      <section className="project-detail">
-        <div className="window-kicker">{selected.type} project</div>
-        <h1>{selected.name}</h1>
-        <p>{selected.description}</p>
-        {selected.url && (
-          <TrackedLink href={selected.url} className="primary-link">
-            Open project
-          </TrackedLink>
-        )}
-      </section>
-    </div>
-  );
-}
-
-function ResumeWindow() {
-  return (
-    <div className="app-window document-window">
-      <div className="document-header">
-        <div>
-          <div className="window-kicker">Resume</div>
-          <h1>{bio.name}</h1>
-        </div>
-        <p>{bio.role} · {bio.location}</p>
-      </div>
-      <p className="lead">{resume.summary}</p>
-      <section className="document-section">
-        <h2>Selected Impact</h2>
-        {resume.selectedImpact.map((impact) => (
-          <p key={impact} className="metric-line">{impact}</p>
-        ))}
-      </section>
-      <section className="document-section">
-        <h2>Experience</h2>
-        {resume.experience.map((entry) => (
-          <article key={`${entry.company}-${entry.dates}`} className="resume-entry">
-            <h3>{entry.role} · {entry.company}</h3>
-            <p className="muted">{entry.dates}{entry.context ? ` · ${entry.context}` : ""}</p>
-            <ul>
-              {entry.bullets.slice(0, 3).map((bullet) => (
-                <li key={bullet}>{bullet}</li>
-              ))}
-            </ul>
-          </article>
-        ))}
-      </section>
-    </div>
-  );
-}
-
-function WritingWindow() {
-  return (
-    <div className="app-window document-window">
-      <div className="window-kicker">Writing and Press</div>
-      <h1>Articles, interviews, and product thinking</h1>
-      <section className="document-section">
-        <h2>Featured</h2>
-        {featuredArticles.map((article) => (
-          <ArticleRow key={article.url} article={article} />
-        ))}
-      </section>
-      <section className="document-section">
-        <h2>Authored</h2>
-        {authoredArticles.map((article) => (
-          <ArticleRow key={article.url} article={article} />
-        ))}
-      </section>
-    </div>
-  );
-}
-
-function ArticleRow({
-  article,
-}: {
-  article: { title: string; url: string; publication: string; year: number };
-}) {
-  return (
-    <TrackedLink href={article.url} className="article-row">
-      <span>{article.title}</span>
-      <small>{article.publication} · {article.year}</small>
-    </TrackedLink>
-  );
-}
-
-function McpWindow() {
-  return (
-    <div className="app-window document-window">
-      <div className="window-kicker">Agent-readable profile</div>
-      <h1>MCP Server</h1>
-      <p className="lead">
-        This site exposes Joscha's background, projects, writing, and resume data through a public MCP endpoint.
-      </p>
-      <div className="code-pill">{contact.mcp_url}</div>
-      <section className="document-section">
-        <h2>Tools</h2>
-        <div className="tool-grid">
-          {mcpTools.map((tool) => (
-            <div className="tool-card" key={tool.name}>
-              <strong>{tool.name}</strong>
-              <span>{tool.parameters}</span>
-              <p>{tool.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function AboutWindow() {
-  return (
-    <div className="app-window document-window">
-      <div className="window-kicker">About</div>
-      <h1>{bio.name}</h1>
-      <p className="lead">{bio.summary}</p>
-      <section className="document-section">
-        <h2>Current Signal</h2>
-        <p>{openToWork.context}</p>
-        <p className="muted">{openToWork.ideal_role}</p>
-      </section>
-      <section className="document-section">
-        <h2>Contact</h2>
-        <p><TrackedLink href={`mailto:${contact.email}`}>{contact.email}</TrackedLink></p>
-        <p><TrackedLink href={contact.linkedin}>{contact.linkedin}</TrackedLink></p>
-        <p><TrackedLink href={contact.github}>{contact.github}</TrackedLink></p>
-      </section>
-    </div>
-  );
-}
-
-function CoffeeWindow() {
-  return (
-    <div className="app-window note-window">
-      <h1>Coffee.txt</h1>
-      <p>Current operating assumption: a good espresso machine is a product team productivity tool.</p>
-      <p>Preferred shot: 18g in, 36g out, 28 seconds.</p>
-      <p className="muted">Status: probably over-caffeinated, still shipping.</p>
-    </div>
-  );
-}
-
-function MobileShell({
-  clock,
-  mobilePanel,
-  setMobilePanel,
-  openApp,
-}: {
-  clock: string;
-  mobilePanel: TerminalAppId | null;
-  setMobilePanel: (id: TerminalAppId | null) => void;
-  openApp: (id: TerminalAppId, source?: string) => void;
-}) {
-  const mobileShortcuts = shortcuts.filter((shortcut) =>
-    ["terminal", "projects", "resume", "writing", "surf", "mcp", "about", "engramviz"].includes(
-      shortcut.id
-    )
-  );
-
-  return (
-    <section className="mobile-shell md:hidden">
-      <div className="mobile-time-chip">{clock}</div>
-      <div className="mobile-terminal-frame">
-        <Terminal
-          embedded
-          onOpenApp={(id) => {
-            if (id === "terminal") {
-              setMobilePanel(null);
-            } else {
-              setMobilePanel(id);
-            }
-          }}
-        />
-      </div>
-      {mobilePanel && mobilePanel !== "terminal" && (
-        <div className={`mobile-panel mobile-panel-${mobilePanel}`}>
-          <div className="mobile-panel-bar">
-            <span>{windowDefaults[mobilePanel].title}</span>
-            <button type="button" onClick={() => setMobilePanel(null)}>
-              Close
-            </button>
-          </div>
-          <div className="mobile-panel-body">
-            <WindowContent appId={mobilePanel} openApp={openApp} />
-          </div>
-        </div>
-      )}
-      <div className="mobile-dock" aria-label="Mobile app drawer">
-        {mobileShortcuts.map((shortcut) => (
-          <button
-            type="button"
-            key={shortcut.id}
-            className="mobile-dock-item"
-            onClick={() => {
-              trackEvent("dock_click", { item: shortcut.id, layout: "mobile" });
-              if (shortcut.href) {
-                trackEvent("outbound_link_click", {
-                  source: "mobile_dock",
-                  href: shortcut.href,
-                });
-                window.open(shortcut.href, "_blank", "noopener,noreferrer");
-                return;
-              }
-              if (shortcut.appId === "terminal") {
-                setMobilePanel(null);
-              } else if (shortcut.appId) {
-                setMobilePanel(shortcut.appId);
-              }
-            }}
-          >
-            <span className={`dock-symbol ${shortcut.type}`}>{shortcut.initials}</span>
-          </button>
-        ))}
-      </div>
-    </section>
   );
 }

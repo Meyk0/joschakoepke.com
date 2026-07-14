@@ -1,7 +1,11 @@
 "use client";
 
 import { CommandResult } from "@/lib/commands";
-import { trackEvent } from "@/lib/analytics";
+import {
+  analyticsDestination,
+  trackEvent,
+  trackMeaningfulAction,
+} from "@/lib/analytics";
 
 interface CommandOutputProps {
   command: string;
@@ -22,9 +26,10 @@ export default function CommandOutput({
         const target = event.target as HTMLElement;
         const anchor = target.closest("a");
         if (anchor?.href) {
+          trackMeaningfulAction("outbound_link", { source: "terminal" });
           trackEvent("outbound_link_click", {
             source: "terminal",
-            href: anchor.href,
+            destination: analyticsDestination(anchor.href),
           });
         }
       }}

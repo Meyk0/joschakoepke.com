@@ -2,23 +2,40 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
+import "@/styles/desktop-shell.css";
+import "@/styles/app-windows.css";
+import "@/styles/surf-game.css";
+import "@/styles/mobile.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://joschakoepke.com"),
-  title: "Joscha Koepke",
+  title: "Joscha Koepke | AI Product Leader",
   description:
-    "Head of Product at Connectly AI. Building AI agents for WhatsApp commerce. Queryable via MCP.",
+    "AI product leader who scaled agent platforms to $10M+ ARR and 40M+ monthly messages. Explore an evidence-grounded portfolio, projects, writing, and resume.",
+  alternates: {
+    canonical: "https://joschakoepke.com",
+  },
+  keywords: [
+    "AI product leader",
+    "AI agents",
+    "LLM evaluation",
+    "agent memory",
+    "product leadership",
+    "Joscha Koepke",
+  ],
   openGraph: {
-    title: "Joscha Koepke — Terminal",
-    description: "A personal site you can query from Claude.",
+    title: "Joscha Koepke | AI Product Leader",
+    description:
+      "An evidence-grounded portfolio for an AI product leader who scaled agent platforms to $10M+ ARR and 40M+ monthly messages.",
     url: "https://joschakoepke.com",
     siteName: "Joscha Koepke",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Joscha Koepke — Terminal",
-    description: "A personal site you can query from Claude.",
+    title: "Joscha Koepke | AI Product Leader",
+    description:
+      "Explore an evidence-grounded AI product portfolio, projects, writing, and resume.",
   },
 };
 
@@ -35,6 +52,12 @@ const jsonLd = {
   sameAs: [
     "https://linkedin.com/in/joschakoepke",
     "https://github.com/Meyk0",
+  ],
+  knowsAbout: [
+    "AI agents",
+    "LLM evaluation",
+    "agent memory and personalization",
+    "product leadership",
   ],
 };
 
